@@ -1,0 +1,83 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router";
+import SignIn from "./pages/AuthPages/SignIn";
+import SignUp from "./pages/AuthPages/SignUp";
+import NotFound from "./pages/OtherPage/NotFound";
+import UserProfiles from "./pages/UserProfiles";
+import Videos from "./pages/UiElements/Videos";
+import Images from "./pages/UiElements/Images";
+import Alerts from "./pages/UiElements/Alerts";
+import Badges from "./pages/UiElements/Badges";
+import Avatars from "./pages/UiElements/Avatars";
+import Buttons from "./pages/UiElements/Buttons";
+import LineChart from "./pages/Charts/LineChart";
+import BarChart from "./pages/Charts/BarChart";
+import Calendar from "./pages/Calendar";
+import NotesList from "./components/quiz/NotesList";
+import BasicTables from "./pages/Tables/BasicTables";
+import FormElements from "./pages/Forms/FormElements";
+import AppLayout from "./layout/AppLayout";
+import { ScrollToTop } from "./components/common/ScrollToTop";
+import Home from "./pages/Dashboard/Home";
+import {AuthProvider} from "./context/AuthContext";
+import GuestRoute from "./helpers/GuestRoute";
+import ChatbotPage from "./pages/Chatbot/ChatbotPage";
+import QuestionLayout from "./components/quiz/QuestionLayout";
+import NotesTranscript from "./components/quiz/NotesTrascript";
+import QuizFlashcard from "./components/quiz/QuizFlashcard";
+import Notes from "./components/quiz/Notes";
+
+export default function App() {
+  return (
+    <>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          {/* Dashboard Layout */}
+          <Route element={<AuthProvider><AppLayout /></AuthProvider>}>
+            <Route index path="/" element={<Home />} />
+
+            {/* Others Page */}
+            <Route path="/profile" element={
+              <UserProfiles />
+            } />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/notes" element={<NotesList />} />
+            <Route path="/notes/:id" element={<Notes />} />
+            <Route path="/notes/:id/quiz" element={<QuestionLayout />} />
+            <Route path="/notes/:id/transcript" element={<NotesTranscript />} />
+            <Route path="/notes/:id/flashcards" element={<QuizFlashcard />} />
+
+            {/* Forms */}
+            <Route path="/form-elements" element={<FormElements />} />
+
+            {/* Tables */}
+            <Route path="/basic-tables" element={<BasicTables />} />
+
+            {/* Ui Elements */}
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/avatars" element={<Avatars />} />
+            <Route path="/badge" element={<Badges />} />
+            <Route path="/buttons" element={<Buttons />} />
+            <Route path="/images" element={<Images />} />
+            <Route path="/videos" element={<Videos />} />
+
+            {/* Charts */}
+            <Route path="/line-chart" element={<LineChart />} />
+            <Route path="/bar-chart" element={<BarChart />} />
+
+            {/* Chatbot */}
+            <Route path="/chatbot/:id" element={<ChatbotPage />} />
+          </Route>
+
+          <Route element={<AuthProvider><GuestRoute /></AuthProvider>}>
+            {/* Auth Layout */}
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+
+            {/* Fallback Route */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </Router>
+    </>
+  )}

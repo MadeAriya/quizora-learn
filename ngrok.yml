@@ -1,0 +1,8 @@
+version: 2
+authtoken: 2xRnlWOrvaIWuNOWQzMIyRntHiM_23y8ZWoVE3RR9yoLbF5ag
+
+tunnels:
+  n8n:
+    proto: http
+    addr: n8n:5678
+    domain: driving-lemming-neutral.ngrok-free.app
