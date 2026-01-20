@@ -18,11 +18,13 @@ export default function QuizSource() {
     const [openModal1, setOpenModal1] = useState<boolean>(false);
     const [openModal2, setOpenModal2] = useState<boolean>(false);
     const [link, setLink] = useState("")
-    const [file, setFile] = useState(null)
+    const [file, setFile] = useState<File | null >(null);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
         setFile(e.target.files[0]);
     };
+
     // method to close modal
     const closeModal1 = () => {
         setOpenModal1(false);
@@ -35,7 +37,7 @@ export default function QuizSource() {
     const { currentUser } = useAuth();
     
     // method to handle generate quiz
-    const handleGenerateQuiz = async (e) => {
+    const handleGenerateQuiz = async (e: any) => {
         e.preventDefault();
         
         const formData = new FormData();
@@ -66,11 +68,12 @@ export default function QuizSource() {
                 console.log(result)
             }
         } catch (error) {
-            console.log(error.message);
+            console.log((error as Error).message);
         }
     };
 
-    const handleFile = async (e) => {
+    if (!file) return;
+    const handleFile = async (e: any) => {
         e.preventDefault();
         const formData = new FormData();
         formData.append("file", file);
@@ -98,7 +101,7 @@ export default function QuizSource() {
                 console.log(result)
             }
         } catch (error) {
-            console.log(error.message);
+            console.log((error as Error).message);
         }
     };
 

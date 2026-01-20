@@ -119,7 +119,7 @@ export default function QuestionLayout() {
           ) : null
           )}
           <div className="grid grid-cols-[full_200px_200px_200px] gap-4 ">
-            {questions[currentQuestion]?.choices.map((choice, index) => (
+            {questions[currentQuestion]?.choices.map((choice: any, index: any) => (
               <div key={index} className="">
                 <button disabled={!!selected} onClick={() => handleAnswer(choice)} className={
                   "mt-2 px-4 py-2 rounded w-full h-full " + (

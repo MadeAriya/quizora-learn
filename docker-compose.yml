@@ -1,30 +1,4 @@
 services:
-  react-dev:
-    container_name: react-dev
-    build:
-      context: ./Frontend
-      dockerfile: ./docker/Dockerfile.dev
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./Frontend:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
-    networks:
-      - bot-network
-
-  react-prod:
-    container_name: react-prod
-    build:
-      context: ./Frontend
-      dockerfile: ./docker/Dockerfile.prod
-    ports:
-      - "80:80"
-    networks:
-      - bot-network
-
   n8n:
     container_name: n8n
     image: n8nio/n8n:latest
@@ -33,38 +7,18 @@ services:
       - "5678:5678"
     environment:
       - GENERIC_TIMEZONE=Asia/Jakarta
-      - N8N_HOST=0.0.0.0
+      - N8N_HOST=n8n.ayakdev.web.id
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - N8N_EDITOR_BASE_URL=https://driving-lemming-neutral.ngrok-free.app
-      - WEBHOOK_URL=https://driving-lemming-neutral.ngrok-free.app
+      - N8N_PROTOCOL=https
+      - N8N_EDITOR_BASE_URL=https://n8n.ayakdev.web.id
+      - WEBHOOK_URL=https://n8n.ayakdev.web.id
       # Perbaikan untuk deprecation warnings
       - DB_SQLITE_POOL_SIZE=5
       - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
       - n8n_n8n_data:/home/node/.n8n
-    networks:
-      - bot-network
-
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: ngrok
-    ports:
-      - "4040:4040"  # Tambahkan ini untuk akses dashboard
-    volumes:
-      - ./ngrok.yml:/etc/ngrok.yml
-    command: start --all --config /etc/ngrok.yml
-    depends_on:
-      - n8n
-    restart: always
-    networks:
-      - bot-network
 
 volumes:
   n8n_n8n_data:
 
-networks:
-  bot-network:
-    name: quizora-learn_bot-network
-    driver: bridge
