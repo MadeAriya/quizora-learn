@@ -3,8 +3,6 @@ import ComponentCard from "../../components/common/ComponentCard";
 import QuizMetrics from "../../components/quiz/QuizMetrics";
 import QuizCategory from "../../components/quiz/QuizCategory";
 import QuizSource from "../../components/quiz/QuizSource";
-import { useParams } from "react-router";
-import { useAuth } from "../../context/AuthContext";
 
 export default function Home() {
   return (

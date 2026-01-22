@@ -48,7 +48,7 @@ export default function QuizSource() {
         // simulate quiz generation
 
         try {
-            const response = await fetch("https://driving-lemming-neutral.ngrok-free.app/webhook/d21b3b4e-1ca4-4d3b-9dd3-3c583a90eedc",
+            const response = await fetch("https://n8n.ayakdev.web.id/webhook/d21b3b4e-1ca4-4d3b-9dd3-3c583a90eedc",
                 {
                     method: "POST",
                     body: formData
@@ -72,16 +72,17 @@ export default function QuizSource() {
         }
     };
 
-    if (!file) return;
     const handleFile = async (e: any) => {
         e.preventDefault();
+
+        if (!file) return;
         const formData = new FormData();
         formData.append("file", file);
         formData.append("user_id", currentUser?.id || "")
         
         setQuizLoading(true);
         try {
-            const response = await fetch("https://driving-lemming-neutral.ngrok-free.app/webhook/f3a1f876-1128-4cb3-9292-eddf1c8f2978",
+            const response = await fetch("https://n8n.ayakdev.web.id/webhook/f3a1f876-1128-4cb3-9292-eddf1c8f2978",
                 {
                     method: "POST",
                     body: formData

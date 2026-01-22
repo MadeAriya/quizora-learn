@@ -100,7 +100,9 @@ export default function ChatbotPage() {
             )
             .subscribe();
 
-        return () => supabase.removeChannel(channel);
+        return () => { 
+            void supabase.removeChannel(channel);
+        };
     }, [conversationId]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
@@ -129,7 +131,7 @@ export default function ChatbotPage() {
         formData.append("quiz_id", id || "");
 
         await fetch(
-            "https://driving-lemming-neutral.ngrok-free.app/webhook-test/905ef1d3-6db8-4a50-8787-d8e925c6a25e",
+            "https://n8n.ayakdev.web.id/webhook/905ef1d3-6db8-4a50-8787-d8e925c6a25e",
             {
                 method: "POST",
                 body: formData,
@@ -147,7 +149,7 @@ export default function ChatbotPage() {
             <div className="flex flex-col items-center min-h-screen px-4">
                 <div className="text-center my-8">
                     <h1 className="text-3xl font-bold text-gray-800">
-                        Good Morning, {currentUser?.displayName}
+                        Good Morning, {currentUser?.user_metadata.full_name}
                     </h1>
                     <p>How can I assist you today?</p>
                 </div>

@@ -11,7 +11,7 @@ export default function UserMetaCard() {
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
               <img
-                src={currentUser?.user_metadata?.avatar_url as string }
+                src={avatar}
                 alt="user"
                 className="w-full h-full object-cover object-center"
               />

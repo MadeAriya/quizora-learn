@@ -16,7 +16,7 @@ export default function Blank() {
   const [quizLoading, setQuizLoading] = useState<boolean>(false);
   const [questions, setQuestions] = useState<any[]>([]);
   const [quizez, setQuizez] = useState<any[]>([]);
-  const [transcript, setTranscript] = useState<any[]>({});
+  const [transcript, setTranscript] = useState<{ transcribe_text: string } | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(1);
 
   const prevQuestion = () => {
@@ -75,9 +75,10 @@ export default function Blank() {
   const { currentUser } = useAuth();
   console.log(id);
 
-  const handleGenerateFlashcard = async (e) => {
-    e.preventDefault();
-
+  if(!id) return;
+  if(!transcript) return;
+  const handleGenerateFlashcard = async () => {
+    
     const formData = new FormData();
     formData.append("transcript", transcript.transcribe_text || "Tidak ada transcript ditemukan");
     formData.append("user_id", currentUser?.id || "");
@@ -85,7 +86,7 @@ export default function Blank() {
 
     setQuizLoading(true);
     try {
-      const response = await fetch("https://driving-lemming-neutral.ngrok-free.app/webhook/a3de8bc7-e44a-4b6b-93ce-e698f92e623b",
+      const response = await fetch("https://n8n.ayakdev.web.id/webhook/a3de8bc7-e44a-4b6b-93ce-e698f92e623b",
         {
           method: "POST",
           body: formData
@@ -104,7 +105,7 @@ export default function Blank() {
         await fetchQuestions();
       }
     } catch (error) {
-      console.log(error.message);
+      console.log((error as Error).message);
     }
   }
   return (
@@ -174,7 +175,7 @@ export default function Blank() {
               <Button
                 onClick={handleGenerateFlashcard}
                 disabled={quizLoading}
-                size="lg"
+                size="md"
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-md transition duration-300 ease-in-out mt-6 flex items-center justify-center gap-2"
               >
                 <AiOutlineLoading3Quarters

@@ -4,13 +4,13 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import { useAuth } from "../../context/AuthContext";
-import { useAvatar } from "../../hooks/useAvatar";
+// import { useAvatar } from "../../hooks/useAvatar";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
 
-  const { currentUser, logout } = useAuth();
+  const { currentUser, signOut } = useAuth();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -159,7 +159,7 @@ export default function UserDropdown() {
             <Button size="sm" variant="outline" onClick={closeModal}>
               Close
             </Button>
-            <Button onClick={logout} size="sm" className="bg-red-600/55 hover:bg-red-700">
+            <Button onClick={signOut} size="sm" className="bg-red-600/55 hover:bg-red-700">
               Sign Out
             </Button>
           </div>
