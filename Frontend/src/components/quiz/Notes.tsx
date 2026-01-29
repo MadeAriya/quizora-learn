@@ -1,36 +1,44 @@
 import { useParams } from "react-router";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { supabase } from "../../config/SupabaseConfig";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 
+interface Quiz {
+  id: string;
+  topic: string;
+}
+
+interface Note {
+  id:string;
+  html: string;
+  quiz_id: string;
+}
+
 export default function Notes() {
   const { id } = useParams<{ id: string }>();
-  const [quizez, setQuizez] = useState<any[]>([]);
-  const [selectedNote, setSelectedNote] = useState<any | null>(null);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const LICENSE_KEY =
-    'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3NjEyNjM5OTksImp0aSI6ImQ0MzNhMjc4LTIwNGEtNGU1Yi04Y2IzLTAzMTZhZTM3YjllMyIsInVzYWdlRW5kcGpbnQiOiJodHRwczovL3Byb3h5LWV2ZW50LmNrZWRpdG9yLmNvbSIsImRpc3RyaWJ1dGlvbkNoYW5uZWwiOlsiY2xvdWQiLCJkcnVwYWwiLCJzaCJdLCJ3aGl0ZUxhYmVsIjp0cnVlLCJsaWNlbnNlVHlwZSI6InRyaWFsIiwiZmVhdHVyZXMiOlsiKiJdLCJ2YyI6IjIyZGFhNThlIn0.mNr2T4lv-j5FoMaGvzL_wqb0alNopx8nqNXcuWnurdMyTKV5kwTJ2P9aMJT7U6ckuJn71vjzZGhaE2EucCClNg';
+  const editorRef = useRef<ClassicEditor | null>(null);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const LICENSE_KEY = import.meta.env.VITE_CKEDITOR_LICENSE_KEY;
 
   useEffect(() => {
-    const fetchQuiz = async () => {
-      const { data, error } = await supabase.from('quizez').select().eq('id', id).single();
-      if (error) console.error(error.message);
-      else setQuizez([data]);
-    };
-    fetchQuiz();
-  }, [id]);
+    const fetchData = async () => {
+      const { data: quizData, error: quizError } = await supabase.from('quizez').select().eq('id', id).single();
+      if (quizError) console.error(quizError.message);
+      else setQuiz(quizData);
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      const { data, error } = await supabase.from('notes').select().eq('quiz_id', id).single();
-      if (error) console.error(error.message);
-      else setSelectedNote(data);
+      const { data: noteData, error: noteError } = await supabase.from('notes').select().eq('quiz_id', id).single();
+      if (noteError) console.error(noteError.message);
+      else setSelectedNote(noteData);
+      
       setIsLoaded(true);
     };
-    fetchNotes();
+    fetchData();
   }, [id]);
 
   useEffect(() => {
@@ -48,7 +56,7 @@ export default function Notes() {
         },
         (payload) => {
           if (payload.eventType === 'UPDATE') {
-            setSelectedNote(payload.new);
+            setSelectedNote(payload.new as Note);
           }
         }
       )
@@ -59,24 +67,31 @@ export default function Notes() {
     };
   }, [id]);
 
-  const handleEditorChange = async (_event: any, editor: any) => {
-    const newContent = editor.getData();
+  const handleEditorChange = () => {
+    if (!editorRef.current) return;
+    const newContent = editorRef.current.getData();
     if (!selectedNote) return;
 
-    setSelectedNote((prev: any) => ({ ...prev, html: newContent }));
+    setSelectedNote((prev: Note | null) => (prev ? { ...prev, html: newContent } : null));
 
-    const { error } = await supabase
-      .from('notes')
-      .update({ html: newContent })
-      .eq('id', selectedNote.id);
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
 
-    if (error) console.error(error.message);
+    debounceTimeout.current = setTimeout(async () => {
+      const { error } = await supabase
+        .from('notes')
+        .update({ html: newContent })
+        .eq('id', selectedNote.id);
+
+      if (error) console.error(error.message);
+    }, 500);
   };
 
   return (
     <div>
       <PageMeta title="Notes Editor" description="Quizora Learn" />
-      {quizez.map(quiz => <PageBreadcrumb key={quiz.id} pageTitle={quiz.topic} />)}
+      {quiz && <PageBreadcrumb pageTitle={quiz.topic} />}
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         {!isLoaded ? (
           <p>Loading...</p>
@@ -87,6 +102,9 @@ export default function Notes() {
               licenseKey: LICENSE_KEY,
             }}
             data={selectedNote.html || ''}
+            onReady={(editor) => {
+              editorRef.current = editor;
+            }}
             onChange={handleEditorChange}
           />
         ) : (

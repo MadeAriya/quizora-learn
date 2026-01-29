@@ -8,12 +8,17 @@ import { useEffect, useState } from "react";
 import {supabase} from "../../config/SupabaseConfig";
 import { Link } from "react-router-dom";
 
+interface Quiz {
+  id: number;
+  topic: string;
+  source?: string;
+}
 
 export default function NotesList() {
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [openModal1, setOpenModal1] = useState<boolean>(false);
   const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
-  const [quizez, setQuizez] = useState<any[]>([]);
+  const [quizez, setQuizez] = useState<Quiz[]>([]);
 
   const closeModal = () => {
     setOpenModal(false);

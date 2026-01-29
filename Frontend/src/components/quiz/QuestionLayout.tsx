@@ -11,10 +11,23 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { FaCheck } from "react-icons/fa";
 import { TbXboxX } from "react-icons/tb";
 
+interface Question {
+  id: string;
+  question: string;
+  choices: string[];
+  answer: string;
+  quiz_id: string;
+}
+
+interface Quiz {
+  id: string;
+  topic: string;
+}
+
 export default function QuestionLayout() {
   const { id } = useParams<{ id: string }>();
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [quizez, setQuizez] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [quizez, setQuizez] = useState<Quiz[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const [modalResult, setModalResultOpen] = useState<boolean>(false);
@@ -119,7 +132,7 @@ export default function QuestionLayout() {
           ) : null
           )}
           <div className="grid grid-cols-[full_200px_200px_200px] gap-4 ">
-            {questions[currentQuestion]?.choices.map((choice: any, index: any) => (
+            {questions[currentQuestion]?.choices.map((choice: string, index: number) => (
               <div key={index} className="">
                 <button disabled={!!selected} onClick={() => handleAnswer(choice)} className={
                   "mt-2 px-4 py-2 rounded w-full h-full " + (

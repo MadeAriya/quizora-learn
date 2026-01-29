@@ -11,11 +11,22 @@ import Button from "../ui/button/Button";
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
+interface Question {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+interface Quiz {
+  id: string;
+  topic: string;
+}
+
 export default function Blank() {
   const { id } = useParams<{ id: string }>();
   const [quizLoading, setQuizLoading] = useState<boolean>(false);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [quizez, setQuizez] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [quizez, setQuizez] = useState<Quiz[]>([]);
   const [transcript, setTranscript] = useState<{ transcribe_text: string } | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(1);
 
@@ -70,7 +81,7 @@ export default function Blank() {
 
   useEffect(() => {
     fetchQuestions();
-  }, [id]);
+  }, [id, fetchQuestions]);
 
   const { currentUser } = useAuth();
   console.log(id);

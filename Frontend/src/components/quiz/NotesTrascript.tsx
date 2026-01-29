@@ -4,10 +4,18 @@ import PageMeta from "../../components/common/PageMeta";
 import { supabase } from "../../config/SupabaseConfig";
 import { useParams } from "react-router";
 
+interface Transcript {
+  transcribe_text: string;
+}
+
+interface Quiz {
+  topic: string;
+}
+
 export default function Blank() {
   const { id } = useParams<{ id: string }>();
-  const [transcript, setTranscript] = useState<any[]>([]);
-  const [quizez, setQuizez] = useState<any[]>([]);
+  const [transcript, setTranscript] = useState<Transcript[]>([]);
+  const [quizez, setQuizez] = useState<Quiz[]>([]);
 
   useEffect(() => {
     const fetchQuizez = async () => {
