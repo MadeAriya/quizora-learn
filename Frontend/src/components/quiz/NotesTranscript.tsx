@@ -217,8 +217,8 @@ export default function NotesTranscript() {
                           key={m.id}
                           className={
                               m.role === "user"
-                                  ? "flex justify-start"
-                                  : "flex justify-end"
+                                  ? "flex justify-end"
+                                  : "flex justify-start"
                           }
                       >
                           <div
