@@ -22,7 +22,7 @@ import {AuthProvider} from "./context/AuthContext";
 import GuestRoute from "./helpers/GuestRoute";
 import ChatbotPage from "./pages/Chatbot/ChatbotPage";
 import QuestionLayout from "./components/quiz/QuestionLayout";
-import NotesTranscript from "./components/quiz/NotesTrascript";
+import NotesTranscript from "./components/quiz/NotesTranscript";
 import QuizFlashcard from "./components/quiz/QuizFlashcard";
 import Notes from "./components/quiz/Notes";
 

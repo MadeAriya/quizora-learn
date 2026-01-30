@@ -2,7 +2,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { Flashcard } from "react-quizlet-flashcard";
 import "react-quizlet-flashcard/dist/index.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router";
 import { supabase } from "../../config/SupabaseConfig";
 import { toast } from "react-toastify";
@@ -41,30 +41,25 @@ export default function Blank() {
   };
 
   useEffect(() => {
-    const fetchQuizez = async () => {
-      const { data, error } = await supabase.from('quizez').select().eq('quiz_id', id);
-      if (error) {
-        console.error("Gagal fetch data:", error.message);
-      } else if (data) {
-        setQuizez(data);
+    const fetchData = async () => {
+      const { data: quizezData, error: quizezError } = await supabase.from('quizez').select().eq('quiz_id', id);
+      if (quizezError) {
+        console.error("Gagal fetch data:", quizezError.message);
+      } else if (quizezData) {
+        setQuizez(quizezData);
+      }
+
+      const { data: transcriptData, error: transcriptError } = await supabase.from('transcript').select('transcribe_text').eq('quiz_id', id).single();
+      if (transcriptError) {
+        console.error("Gagal fetch data:", transcriptError.message);
+      } else if (transcriptData) {
+        setTranscript(transcriptData);
       }
     };
-    fetchQuizez();
+    fetchData();
   }, [id]);
 
-  useEffect(() => {
-    const fetchTranscript = async () => {
-      const { data, error } = await supabase.from('transcript').select('transcribe_text').eq('quiz_id', id).single();
-      if (error) {
-        console.error("Gagal fetch data:", error.message);
-      } else if (data) {
-        setTranscript(data);
-      }
-    };
-    fetchTranscript();
-  }, [id]);
-
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async () => {
     const { data, error } = await supabase
       .from('flashcard')
       .select()
@@ -77,7 +72,7 @@ export default function Blank() {
     } else {
       setQuestions(data || []);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchQuestions();
@@ -141,15 +136,23 @@ export default function Blank() {
                     className="custom-flashcard"
                     front={{
                       html: (
-                        <div className="w-full flex items-center justify-center p-6 rounded-xl shadow-lg bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transform transition-transform duration-300 hover:scale-105">
-                          <h1 className="text-lg md:text-xl font-semibold text-center text-wrap break-words text-balance">{question.question}</h1>
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 rounded-2xl shadow-xl border-t-4 border-l-4 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-800 text-gray-900 dark:text-white transform transition-transform duration-300 hover:scale-105 active:scale-100 cursor-pointer relative overflow-hidden">
+                          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] opacity-10 dark:opacity-5"></div>
+                          <h1 className="relative z-10 text-sm md:text-base font-extrabold text-center text-wrap break-words leading-normal">
+                            {question.question}
+                          </h1>
+                          <span className="absolute bottom-4 right-4 text-gray-400 dark:text-gray-500 text-sm">Tap to reveal</span>
                         </div>
                       ),
                     }}
                     back={{
                       html: (
-                        <div className="w-full flex items-center justify-center p-6 rounded-xl shadow-lg bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 text-center text-gray-900 dark:text-white transform transition-transform duration-300 hover:scale-105">
-                          <h1 className="text-lg md:text-xl font-semibold text-center text-wrap break-words text-balance">{question.answer}</h1>
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 rounded-2xl shadow-xl border-t-4 border-l-4 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-800 text-gray-900 dark:text-white transform transition-transform duration-300 hover:scale-105 active:scale-100 cursor-pointer relative overflow-hidden">
+                          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] opacity-10 dark:opacity-5"></div>
+                          <h1 className="relative z-10 text-2xl md:text-base font-extrabold text-center text-wrap break-words leading-normal">
+                            {question.answer}
+                          </h1>
+                          <span className="absolute bottom-4 right-4 text-gray-400 dark:text-gray-500 text-sm">Tap to flip back</span>
                         </div>
                       ),
                     }}
@@ -157,43 +160,65 @@ export default function Blank() {
                 ) : null
               )}
 
-              <div className="mt-8 flex justify-center gap-6">
-                <button
-                  onClick={prevQuestion}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
-                >
-                  <FaArrowLeft /> Prev
-                </button>
-                <h1 className="text-dark dark:text-white self-center text-lg font-medium">
-                  Question {currentQuestion + 1} / {questions.length}
-                </h1>
-                <button
-                  onClick={nextQuestion}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
-                >
-                  Next <FaArrowRight />
-                </button>
+              <div className="mt-8 w-full max-w-md">
+                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                    style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between items-center text-dark dark:text-white text-lg font-medium">
+                  <button
+                    onClick={prevQuestion}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+                  >
+                    <FaArrowLeft /> Prev
+                  </button>
+                  <span>
+                    Question {currentQuestion + 1} / {questions.length}
+                  </span>
+                  <button
+                    onClick={nextQuestion}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+                  >
+                    Next <FaArrowRight />
+                  </button>
+                </div>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center p-10 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-              <h1 className="text-black dark:text-white text-3xl font-bold mb-4">
-                Your flashcard is Empty
+            <div className="flex flex-col items-center p-10 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 shadow-lg text-center">
+              <svg
+                className="w-24 h-24 text-gray-400 dark:text-gray-600 mb-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+              <h1 className="text-black dark:text-white text-3xl font-extrabold mb-4">
+                No Flashcards Yet
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-                Generate flashcards from your quiz transcript to start learning!
+              <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg max-w-md">
+                Generate flashcards from your quiz transcript to start an interactive learning experience.
               </p>
               <Button
                 onClick={handleGenerateFlashcard}
                 disabled={quizLoading}
-                size="md"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-md transition duration-300 ease-in-out mt-6 flex items-center justify-center gap-2"
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 <AiOutlineLoading3Quarters
                   color="white"
                   className={`text-xl ${quizLoading ? "block animate-spin" : "hidden"}`}
                 />
-                {quizLoading ? "Generating Flashcard..." : "Generate Flashcards"}
+                {quizLoading ? "Generating Flashcards..." : "Generate Flashcards"}
               </Button>
             </div>
           )}
