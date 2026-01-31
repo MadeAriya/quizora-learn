@@ -7,6 +7,9 @@ import { FaPaperPlane } from "react-icons/fa";
 import { CiSettings } from "react-icons/ci";
 import { useAuth } from "../../context/AuthContext";
 import YouTube from "react-youtube";
+import { Panel, Group, Separator } from "react-resizable-panels";
+import { FaAlignJustify } from "react-icons/fa";
+
 
 interface Transcript {
     transcribe_text: string;
@@ -202,9 +205,9 @@ export default function NotesTranscript() {
             {quizez.map((text) =>
                 <PageBreadcrumb pageTitle={text.topic} />
             )}
-            <div className="flex h-screen">
+            <Group orientation="horizontal" className="flex h-screen">
                 {/* Transcript Section */}
-                <div className="w-1/2 p-4 border-r">
+                <Panel defaultSize={50} minSize={20} className="w-1/2 p-4 border-r">
                     {videoId && <YouTube videoId={videoId} />}
                     <h1 className="text-2xl font-bold mb-4 mt-4">Transcript</h1>
                     <div className="h-full overflow-y-auto">
@@ -214,10 +217,12 @@ export default function NotesTranscript() {
                             </p>
                         ))}
                     </div>
-                </div>
+                </Panel>
+
+                <Separator className="w-2 bg-gray-300 cursor-col-resize hover:bg-blue-400" />
 
                 {/* Chatbot Section */}
-                <div className="w-1/2 flex flex-col items-center px-4">
+                <Panel defaultSize={50} minSize={20} className="w-1/2 flex flex-col items-center px-4">
                     <div className="text-center my-8">
                         <h1 className="text-3xl font-bold text-gray-800">
                             Good Morning, {currentUser?.user_metadata.full_name}
@@ -257,7 +262,6 @@ export default function NotesTranscript() {
                         ))}
                         <div ref={bottomRef} />
                     </div>
-
                     <form
                         onSubmit={handleSendMessage}
                         className="w-full max-w-3xl flex items-center gap-2 border bg-white rounded-full px-3 py-2 my-4"
@@ -284,8 +288,9 @@ export default function NotesTranscript() {
                             <FaPaperPlane />
                         </button>
                     </form>
-                </div>
-            </div>
+
+                </Panel>
+            </Group>
         </>
     );
 }

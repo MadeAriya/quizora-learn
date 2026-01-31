@@ -39,18 +39,13 @@ const AppSidebar: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const othersItems: NavItem[] = [
     {
-      icon: <FaRobot />,
-      name: "Chatbot",
-      path: id ? `/chatbot/${id}` : `/notes`,
-    },
-    {
       icon: <IoDocumentTextOutline />,
       name: "Documents",
       path: id ? `/notes/${id}` : `/notes`,
     },
     {
-      icon: <MdOutlineSubtitles />,
-      name: "Transcript",
+      icon: <FaRobot />,
+      name: "Chat",
       path: id ? `/notes/${id}/transcript` : `/notes`,
     },
     {
