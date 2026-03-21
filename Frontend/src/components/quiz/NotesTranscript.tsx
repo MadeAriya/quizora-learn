@@ -7,9 +7,8 @@ import { FaPaperPlane } from "react-icons/fa";
 import { CiSettings } from "react-icons/ci";
 import { useAuth } from "../../context/AuthContext";
 import YouTube from "react-youtube";
-import { Panel, Group, Separator } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { FaAlignJustify } from "react-icons/fa";
-
 
 interface Transcript {
     transcribe_text: string;
@@ -193,36 +192,52 @@ export default function NotesTranscript() {
         };
         fetchTranscript();
     }, [id]);
+    const videoSource = quizez[0]?.source;
+    let videoId = null;
+    if (videoSource) {
+        if (videoSource.includes('youtu.be/')) {
+            videoId = videoSource.split('youtu.be/')[1]?.split("?")[0];
+        } else if (videoSource.includes('watch?v=')) {
+            videoId = videoSource.split('v=')[1]?.split("&")[0];
+        }
+    }
 
-    const videoId = quizez[0]?.source.split('v=')[1];
-
+    const opts = {
+    height: "360",
+    width: "640",
+    playerVars: {
+        autoplay: 0,
+    },
+    };
     return (
         <>
             <PageMeta
                 title="Notes Transcript - Quizora Learn"
                 description="View your notes and chat with our AI-powered chatbot"
             />
-            {quizez.map((text) =>
-                <PageBreadcrumb pageTitle={text.topic} />
+            {quizez.map((text, idx) =>
+                <PageBreadcrumb key={idx} pageTitle={text.topic} />
             )}
-            <Group orientation="horizontal" className="flex h-screen">
+            <PanelGroup orientation="horizontal" className="h-screen w-full">
                 {/* Transcript Section */}
-                <Panel defaultSize={50} minSize={20} className="w-1/2 p-4 border-r">
-                    {videoId && <YouTube videoId={videoId} />}
+                <Panel defaultSize={50} minSize={20} className="p-4 border-r flex flex-col h-full overflow-hidden">
+                    {videoId && <YouTube videoId={videoId} opts={opts}/>}
                     <h1 className="text-2xl font-bold mb-4 mt-4">Transcript</h1>
                     <div className="h-full overflow-y-auto">
-                        {transcript.map((text) => (
-                            <p className="leading-8 text-md text-black dark:text-gray-400 sm:text-base">
+                        {transcript.map((text, idx) => (
+                            <p key={idx} className="leading-8 text-md text-black dark:text-gray-400 overflow-y-auto sm:text-base">
                                 {text.transcribe_text}
                             </p>
                         ))}
                     </div>
                 </Panel>
 
-                <Separator className="w-2 bg-gray-300 cursor-col-resize hover:bg-blue-400" />
+                <PanelResizeHandle className="w-2 bg-gray-300 cursor-col-resize hover:bg-blue-400 transition-colors flex flex-col justify-center items-center">
+                   <div className="h-8 w-1 bg-gray-500 rounded-full" />
+                </PanelResizeHandle>
 
                 {/* Chatbot Section */}
-                <Panel defaultSize={50} minSize={20} className="w-1/2 flex flex-col items-center px-4">
+                <Panel defaultSize={50} minSize={20} className="flex flex-col items-center px-4 h-full relative">
                     <div className="text-center my-8">
                         <h1 className="text-3xl font-bold text-gray-800">
                             Good Morning, {currentUser?.user_metadata.full_name}
@@ -261,36 +276,36 @@ export default function NotesTranscript() {
                             </div>
                         ))}
                         <div ref={bottomRef} />
+                        <form
+                            onSubmit={handleSendMessage}
+                            className="fixed max-w-3xl flex items-center gap-2 border bg-white rounded-full px-3 py-2 my-4"
+                        >
+                            <button
+                                type="button"
+                                className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full"
+                            >
+                                <CiSettings size={22} />
+                            </button>
+
+                            <input
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                placeholder="Type your message..."
+                                className="flex-1 outline-none px-2"
+                            />
+
+                            <button
+                                type="submit"
+                                disabled={!message.trim()}
+                                className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full"
+                            >
+                                <FaPaperPlane />
+                            </button>
+                        </form>
                     </div>
-                    <form
-                        onSubmit={handleSendMessage}
-                        className="w-full max-w-3xl flex items-center gap-2 border bg-white rounded-full px-3 py-2 my-4"
-                    >
-                        <button
-                            type="button"
-                            className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full"
-                        >
-                            <CiSettings size={22} />
-                        </button>
-
-                        <input
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Type your message..."
-                            className="flex-1 outline-none px-2"
-                        />
-
-                        <button
-                            type="submit"
-                            disabled={!message.trim()}
-                            className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full"
-                        >
-                            <FaPaperPlane />
-                        </button>
-                    </form>
 
                 </Panel>
-            </Group>
+            </PanelGroup>
         </>
     );
 }

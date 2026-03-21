@@ -40,34 +40,41 @@ export default function QuizSource() {
     const handleGenerateQuiz = async (e: any) => {
         e.preventDefault();
         
-        const formData = new FormData();
-        formData.append("link", link);
-        formData.append("user_id", currentUser?.id || "")
-
         setQuizLoading(true);
-        // simulate quiz generation
 
         try {
-            const response = await fetch("https://n8n.ayakdev.web.id/webhook/d21b3b4e-1ca4-4d3b-9dd3-3c583a90eedc",
+            // Send the link to our local Node backend
+            const localBackendUrl = "http://localhost:3001/api/transcript";
+            
+            const response = await fetch(localBackendUrl,
                 {
                     method: "POST",
-                    body: formData
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      link: link,
+                      user_id: currentUser?.id || ""
+                    })
                 },
             );
 
             const result = await response.json();
 
             if (result.success) {
-                console.log("succes")
-            } else {
                 setTimeout(() => {
                     setQuizLoading(false);
                     setOpenModal1(false);
-                    toast.success("Quiz generated successfully! You can now customize it in the quizzes section.");
+                    toast.success("YouTube transcript extracted and quiz generation started!");
                 }, 2000);
-                console.log(result)
+            } else {
+                setQuizLoading(false);
+                toast.error(result.error || "Failed to extract transcript.");
+                console.error("Transcript extraction error:", result.error);
             }
         } catch (error) {
+            setQuizLoading(false);
+            toast.error("An error occurred while connecting to the transcript service.");
             console.log((error as Error).message);
         }
     };
