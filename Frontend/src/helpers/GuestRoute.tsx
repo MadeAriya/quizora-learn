@@ -6,7 +6,7 @@ export default function GuestRoute() {
 
     // check if user is authenticated
     if (currentUser) {
-        return <Navigate to={"/"} />
+        return <Navigate to={"/dashboard"} />
     }
 
 

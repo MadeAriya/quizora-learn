@@ -26,7 +26,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    path: "/"
+    path: "/dashboard"
   },
   {
     icon: <FaFolder />,
@@ -277,7 +277,7 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>
-            {location.pathname !== "/" && location.pathname !== "/notes" && (
+            {location.pathname !== "/dashboard" && location.pathname !== "/notes" && (
               <div className="">
                 <h2
                   className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered

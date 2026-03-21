@@ -32,15 +32,82 @@ interface Answer {
 import QuestionPlaceholder from "./QuestionPlaceholder";
 import { useAuth } from "../../context/AuthContext";
 
+let audioCtx: AudioContext | null = null;
+
+const initAudio = () => {
+  const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!audioCtx) {
+    audioCtx = new AudioCtxClass();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+};
+
+const playCorrectSound = () => {
+  const ctx = initAudio();
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  // A bright chime sound for correct answer
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(600, ctx.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+
+  gainNode.gain.setValueAtTime(0, ctx.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05); // quick attack
+  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5); // decay
+
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + 0.5);
+};
+
+const playWrongSound = () => {
+  const ctx = initAudio();
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  // A low buzz sound for wrong answer
+  oscillator.type = 'square';
+  oscillator.frequency.setValueAtTime(150, ctx.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+
+  gainNode.gain.setValueAtTime(0, ctx.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.05); // quick attack
+  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4); // decay
+
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + 0.4);
+};
+
 export default function QuestionLayout() {
   const { id } = useParams<{ id: string }>();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizez, setQuizez] = useState<Quiz[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [answers, setAnswers] = useState<Record<string, Answer>>(() => {
+    try {
+      const stored = localStorage.getItem(`quiz_progress_${id}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (Object.keys(answers).length > 0) {
+      localStorage.setItem(`quiz_progress_${id}`, JSON.stringify(answers));
+    }
+  }, [answers, id]);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const [modalResult, setModalResultOpen] = useState<boolean>(false);
   const [popUp, setPopUpOpen] = useState<boolean>(false);
+  const [hideCorrect, setHideCorrect] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
@@ -97,13 +164,20 @@ export default function QuestionLayout() {
     };
   }, [id]);
 
-  const [generating, setGenerating] = useState(false);
+  const [generating] = useState(false);
   const [generatingQuestion, setGeneratingQuestion] = useState(false);
+
+  const navigateToQuestion = (index: number) => {
+    setCurrentQuestion(index);
+    const q = questions[index];
+    if (q && answers[q.id]?.isCorrect) {
+       setHideCorrect(prev => ({...prev, [q.id]: true}));
+    }
+  };
 
   const prevQuestion = () => {
     if (questions.length === 0) return;
-    setCurrentQuestion((currentQuestion - 1 + questions.length) % questions.length
-    );
+    navigateToQuestion((currentQuestion - 1 + questions.length) % questions.length);
   }
 
   const handleGenerateQuestion = async () => {
@@ -149,7 +223,7 @@ export default function QuestionLayout() {
     if (currentQuestion === questions.length - 1) {
       handleGenerateQuestion();
     } else {
-      setCurrentQuestion(currentQuestion + 1);
+      navigateToQuestion(currentQuestion + 1);
     }
   };
 
@@ -161,12 +235,24 @@ export default function QuestionLayout() {
     if (answers[activeQuestion.id]) return;
 
     const isCorrect = selectedChoice === activeQuestion.answer;
+    
+    // Play sound based on result
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
+
     setAnswers(prev => ({
       ...prev,
       [activeQuestion.id]: {
         isCorrect,
         selectedChoice
       }
+    }));
+    setHideCorrect(prev => ({
+      ...prev,
+      [activeQuestion.id]: false
     }));
   }
 
@@ -216,32 +302,71 @@ export default function QuestionLayout() {
                 <>
                   {questions.map((question, index) => index === currentQuestion ? (
                     <div key={question.id}>
-                      {answers[question.id] && (
+                      {answers[question.id] && !hideCorrect[question.id] && (
                         <div className={`absolute top-2 right-2 px-4 py-2 rounded-md ${answers[question.id].isCorrect ? 'bg-green-500' : 'bg-red-500'
-                          }`}>
+                          } text-white font-semibold`}>
                           {answers[question.id].isCorrect ? "Correct" : "Wrong"}
                         </div>
                       )}
+
+                      {answers[question.id]?.isCorrect && hideCorrect[question.id] && (
+                        <div className="mb-4 mt-2 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between border border-indigo-100 dark:border-indigo-800 gap-4">
+                          <span className="text-indigo-700 dark:text-indigo-300 font-medium text-sm text-left">
+                            💡 You've correctly answered this question before.
+                          </span>
+                          <button 
+                            onClick={() => setHideCorrect(prev => ({...prev, [question.id]: false}))}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors shadow-sm whitespace-nowrap"
+                          >
+                            View Answer
+                          </button>
+                        </div>
+                      )}
+                      
+                      {answers[question.id]?.isCorrect && !hideCorrect[question.id] && (
+                        <div className="mb-4 mt-2 flex justify-end">
+                           <button 
+                            onClick={() => setHideCorrect(prev => ({...prev, [question.id]: true}))}
+                            className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 rounded-md text-xs font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                          >
+                            Hide Answer
+                          </button>
+                        </div>
+                      )}
+
                       <h1 className="text-2xl my-2">{question.question}</h1>
                     </div>
                   ) : null
                   )}
                   <div className="grid grid-cols-[full_200px_200px_200px] gap-4 ">
-                    {questions[currentQuestion]?.choices.map((choice: string, index: number) => (
-                      <div key={index} className="">
-                        <button disabled={!!selected} onClick={() => handleAnswer(choice)} className={
-                          "mt-2 px-4 py-2 rounded w-full h-full " + (
-                            selected
-                              ? (choice === activeQuestion.answer
-                                ? "bg-green-500 text-white"       // jawaban benar
-                                : choice === selected.selectedChoice
-                                  ? "bg-red-500 text-white"       // jawaban yang dipilih tapi salah
-                                  : "bg-gray-200")                // pilihan lain setelah jawaban terkunci
-                              : "flex items-center justify-center p-4 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-gray-50 hover:bg-gray-100 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] transition text-start dark:text-gray-400"     // default sebelum menjawab
-                          )
-                        }>{choice}</button>
-                      </div>
-                    ))}
+                    {questions[currentQuestion]?.choices.map((choice: string, index: number) => {
+                      let btnClass = "flex items-center justify-center p-4 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.05] transition text-start dark:text-gray-400";
+                      
+                      const showColors = selected && (!selected.isCorrect || !hideCorrect[activeQuestion.id]);
+
+                      if (showColors) {
+                         if (choice === activeQuestion.answer) {
+                            btnClass = "bg-green-500 border border-green-600 dark:border-green-400 text-white flex items-center justify-center p-4 rounded-lg";
+                         } else if (choice === selected?.selectedChoice) {
+                            btnClass = "bg-red-500 border border-red-600 dark:border-red-400 text-white flex items-center justify-center p-4 rounded-lg";
+                         } else {
+                            btnClass = "bg-gray-200 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center p-4 rounded-lg";
+                         }
+                      } else if (!selected) {
+                         btnClass += " hover:bg-gray-100 dark:hover:bg-white/[0.1] cursor-pointer";
+                      } else {
+                         // selected but hidden
+                         btnClass += " opacity-90";
+                      }
+
+                      return (
+                        <div key={index} className="">
+                          <button disabled={!!selected} onClick={() => handleAnswer(choice)} className={`mt-2 w-full h-full font-medium ${btnClass}`}>
+                            {choice}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -314,7 +439,7 @@ export default function QuestionLayout() {
               {questions.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setCurrentQuestion(index)}
+                  onClick={() => navigateToQuestion(index)}
                   className={`w-10 h-10 rounded-full mx-1 my-1 ${index === currentQuestion ? 'bg-blue-500 text-white' : 'bg-gray-300'
                     }`}
                   style={{ flex: '0 0 calc(10% - 8px)' }}

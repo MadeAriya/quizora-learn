@@ -25,6 +25,7 @@ import QuestionLayout from "./components/quiz/QuestionLayout";
 import NotesTranscript from "./components/quiz/NotesTranscript";
 import QuizFlashcard from "./components/quiz/QuizFlashcard";
 import Notes from "./components/quiz/Notes";
+import LandingPage from "./pages/LandingPage";
 
 export default function App() {
   return (
@@ -32,9 +33,14 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={
+            <LandingPage />
+          } />
+
           {/* Dashboard Layout */}
           <Route element={<AuthProvider><AppLayout /></AuthProvider>}>
-            <Route index path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Home />} />
 
             {/* Others Page */}
             <Route path="/profile" element={

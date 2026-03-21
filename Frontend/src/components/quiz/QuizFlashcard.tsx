@@ -117,42 +117,52 @@ export default function Blank() {
   return (
     <div>
       <PageMeta
-        title="React.js Blank Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Blank Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Flashcards - Quizora Learn"
+        description="Practice and memorize with interactive AI generated flashcards."
       />
 
       {quizez.map((quiz) => (
         <PageBreadcrumb key={quiz.id} pageTitle={quiz.topic} />
       ))}
     
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] xl:p-12">
-        <div className="flex flex-col items-center justify-center w-full text-center mx-auto max-w-4xl">
+      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 xl:p-10 mb-8 max-w-5xl mx-auto">
+        <div className="flex flex-col items-center justify-center w-full mx-auto max-w-3xl">
           {questions.length > 0 ? (
             <>
               {questions.map((question, index) =>
                 index === currentQuestion ? (
                   <Flashcard
                     key={question.id || index}
-                    className="custom-flashcard"
+                    className="custom-flashcard w-full"
                     front={{
                       html: (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 rounded-2xl shadow-xl border-t-4 border-l-4 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-800 text-gray-900 dark:text-white transform transition-transform duration-300 hover:scale-105 active:scale-100 cursor-pointer relative overflow-hidden">
-                          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] opacity-10 dark:opacity-5"></div>
-                          <h1 className="relative z-10 text-sm md:text-base font-extrabold text-center text-wrap break-words leading-normal">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] cursor-pointer group relative">
+                          <div className="absolute top-6 left-6 flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest">
+                             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                             Question
+                          </div>
+                          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-center text-wrap break-words leading-relaxed px-4">
                             {question.question}
                           </h1>
-                          <span className="absolute bottom-4 right-4 text-gray-400 dark:text-gray-500 text-sm">Tap to reveal</span>
+                          <div className="absolute bottom-6 flex flex-col items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                             <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Click to reveal</span>
+                          </div>
                         </div>
                       ),
                     }}
                     back={{
                       html: (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 rounded-2xl shadow-xl border-t-4 border-l-4 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-800 text-gray-900 dark:text-white transform transition-transform duration-300 hover:scale-105 active:scale-100 cursor-pointer relative overflow-hidden">
-                          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] opacity-10 dark:opacity-5"></div>
-                          <h1 className="relative z-10 text-2xl md:text-base font-extrabold text-center text-wrap break-words leading-normal">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/20 text-gray-800 dark:text-gray-100 transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] cursor-pointer group relative">
+                          <div className="absolute top-6 left-6 flex items-center gap-2 text-xs sm:text-sm font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">
+                             <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                             Answer
+                          </div>
+                          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-center text-wrap break-words leading-relaxed px-4 text-indigo-900 dark:text-indigo-100">
                             {question.answer}
                           </h1>
-                          <span className="absolute bottom-4 right-4 text-gray-400 dark:text-gray-500 text-sm">Tap to flip back</span>
+                          <div className="absolute bottom-6 flex flex-col items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                             <span className="text-indigo-300 dark:text-indigo-500 text-sm font-medium">Click to flip back</span>
+                          </div>
                         </div>
                       ),
                     }}
@@ -160,65 +170,71 @@ export default function Blank() {
                 ) : null
               )}
 
-              <div className="mt-8 w-full max-w-md">
-                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+              <div className="mt-12 w-full max-w-xl px-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 tracking-wider uppercase">Progress</span>
+                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                    {currentQuestion + 1} <span className="text-gray-400 dark:text-gray-600 font-medium">/ {questions.length}</span>
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2 dark:bg-gray-800 mb-8 overflow-hidden">
                   <div
-                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                    className="bg-blue-500 h-full rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between items-center text-dark dark:text-white text-lg font-medium">
+
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
                   <button
                     onClick={prevQuestion}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+                    disabled={questions.length <= 1}
+                    className="group outline-none flex flex-1 items-center justify-center gap-3 px-6 py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <FaArrowLeft /> Prev
+                    <FaArrowLeft className="transition-transform group-hover:-translate-x-1" />
+                    <span>Previous</span>
                   </button>
-                  <span>
-                    Question {currentQuestion + 1} / {questions.length}
-                  </span>
+                  
                   <button
                     onClick={nextQuestion}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+                    disabled={questions.length <= 1}
+                    className="group outline-none flex flex-1 items-center justify-center gap-3 px-6 py-4 bg-blue-600 text-white font-medium rounded-2xl shadow-[0_8px_20px_rgb(37,99,235,0.24)] hover:bg-blue-700 hover:shadow-[0_8px_20px_rgb(37,99,235,0.4)] transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Next <FaArrowRight />
+                    <span>Next Card</span>
+                    <FaArrowRight className="transition-transform group-hover:translate-x-1" />
                   </button>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center p-10 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 shadow-lg text-center">
-              <svg
-                className="w-24 h-24 text-gray-400 dark:text-gray-600 mb-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                ></path>
-              </svg>
-              <h1 className="text-black dark:text-white text-3xl font-extrabold mb-4">
+            <div className="flex flex-col items-center justify-center py-16 px-6 sm:px-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl bg-gray-50/50 dark:bg-gray-800/30 text-center w-full max-w-2xl">
+              <div className="w-20 h-20 mb-8 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center -rotate-3 shadow-sm border border-blue-100 dark:border-blue-800/50">
+                <svg className="w-10 h-10 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+              </div>
+              <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-extrabold mb-4 tracking-tight">
                 No Flashcards Yet
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg max-w-md">
-                Generate flashcards from your quiz transcript to start an interactive learning experience.
+              <p className="text-gray-500 dark:text-gray-400 mb-8 text-base sm:text-lg max-w-md leading-relaxed">
+                Generate AI-powered flashcards from your quiz transcript to start an interactive learning session.
               </p>
               <Button
                 onClick={handleGenerateFlashcard}
                 disabled={quizLoading}
                 size="lg"
-                className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center gap-2"
+                className="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-2xl shadow-[0_8px_20px_rgb(37,99,235,0.24)] hover:shadow-[0_8px_20px_rgb(37,99,235,0.4)] transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 flex items-center justify-center gap-3 w-full sm:w-auto"
               >
-                <AiOutlineLoading3Quarters
-                  color="white"
-                  className={`text-xl ${quizLoading ? "block animate-spin" : "hidden"}`}
-                />
-                {quizLoading ? "Generating Flashcards..." : "Generate Flashcards"}
+                {quizLoading ? (
+                  <>
+                    <AiOutlineLoading3Quarters className="w-5 h-5 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Generate Flashcards</span>
+                    <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  </>
+                )}
               </Button>
             </div>
           )}
