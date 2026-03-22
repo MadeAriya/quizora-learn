@@ -1,5 +1,6 @@
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from 'react';
+import { FaFire } from 'react-icons/fa';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { supabase } from "../../config/SupabaseConfig";
@@ -19,6 +20,7 @@ interface Note {
 
 export default function Notes() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -91,7 +93,19 @@ export default function Notes() {
   return (
     <div>
       <PageMeta title="Notes Editor" description="Quizora Learn" />
-      {quiz && <PageBreadcrumb pageTitle={quiz.topic} />}
+      
+      {quiz && (
+        <div className="flex items-center justify-between flex-wrap gap-4 mt-4">
+          <PageBreadcrumb pageTitle={quiz.topic} />
+          <button 
+            onClick={() => navigate(`/notes/${id}/doomscroll`)}
+            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-indigo-600 hover:from-orange-600 hover:to-indigo-700 text-white px-5 py-2.5 rounded-full font-bold shadow-[0_4px_15px_rgba(249,115,22,0.4)] transition-all xl:mr-10 mb-6"
+          >
+            <FaFire className="text-yellow-300" /> Doomscroll Mode
+          </button>
+        </div>
+      )}
+
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         {!isLoaded ? (
           <p>Loading...</p>

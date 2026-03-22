@@ -26,6 +26,7 @@ import NotesTranscript from "./components/quiz/NotesTranscript";
 import QuizFlashcard from "./components/quiz/QuizFlashcard";
 import Notes from "./components/quiz/Notes";
 import LandingPage from "./pages/LandingPage";
+import DoomscrollMode from "./pages/Doomscroll/DoomscrollMode";
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/notes" element={<NotesList />} />
             <Route path="/notes/:id" element={<Notes />} />
             <Route path="/notes/:id/quiz" element={<QuestionLayout />} />
+            <Route path="/notes/:id/doomscroll" element={<DoomscrollMode />} />
             <Route path="/notes/:id/transcript" element={<NotesTranscript />} />
             <Route path="/notes/:id/flashcards" element={<QuizFlashcard />} />
 

@@ -1,15 +1,14 @@
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { useParams } from "react-router";
-import {supabase} from "../../config/SupabaseConfig";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "../../config/SupabaseConfig";
+import { useEffect, useState } from "react";
 import { Modal } from "../ui/modal";
-import { useNavigate } from "react-router-dom";
-import { IoIosCheckmarkCircle } from "react-icons/io";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { FaCheck } from "react-icons/fa";
+import { FaCheck, FaArrowRight, FaArrowLeft, FaLightbulb } from "react-icons/fa";
 import { TbXboxX } from "react-icons/tb";
+import { BsStars } from "react-icons/bs";
+import QuestionPlaceholder from "./QuestionPlaceholder";
+import { useAuth } from "../../context/AuthContext";
 
 interface Question {
   id: string;
@@ -29,9 +28,6 @@ interface Answer {
   selectedChoice: string;
 }
 
-import QuestionPlaceholder from "./QuestionPlaceholder";
-import { useAuth } from "../../context/AuthContext";
-
 let audioCtx: AudioContext | null = null;
 
 const initAudio = () => {
@@ -44,51 +40,52 @@ const initAudio = () => {
 };
 
 const playCorrectSound = () => {
-  const ctx = initAudio();
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
+  try {
+    const ctx = initAudio();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
 
-  // A bright chime sound for correct answer
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(600, ctx.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(600, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
 
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05); // quick attack
-  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5); // decay
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05); 
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5); 
 
-  oscillator.start(ctx.currentTime);
-  oscillator.stop(ctx.currentTime + 0.5);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.5);
+  } catch(e) { /* ignore audio errors */ }
 };
 
 const playWrongSound = () => {
-  const ctx = initAudio();
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
+  try {
+    const ctx = initAudio();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
 
-  // A low buzz sound for wrong answer
-  oscillator.type = 'square';
-  oscillator.frequency.setValueAtTime(150, ctx.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(150, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
 
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.05); // quick attack
-  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4); // decay
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.05); 
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4); 
 
-  oscillator.start(ctx.currentTime);
-  oscillator.stop(ctx.currentTime + 0.4);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
+  } catch(e) { /* ignore audio errors */ }
 };
 
 export default function QuestionLayout() {
   const { id } = useParams<{ id: string }>();
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [quizez, setQuizez] = useState<Quiz[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>(() => {
     try {
@@ -104,21 +101,12 @@ export default function QuestionLayout() {
       localStorage.setItem(`quiz_progress_${id}`, JSON.stringify(answers));
     }
   }, [answers, id]);
-  const [score, setScore] = useState({ correct: 0, wrong: 0 });
-  const [modalResult, setModalResultOpen] = useState<boolean>(false);
-  const [popUp, setPopUpOpen] = useState<boolean>(false);
+
   const [hideCorrect, setHideCorrect] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  const closeModalResult = () => {
-    setModalResultOpen(false);
-    navigate("/notes");
-  }
-
-  const closePopUp = () => {
-    setPopUpOpen(false);
-  }
+  const [generatingQuestion, setGeneratingQuestion] = useState(false);
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -133,16 +121,6 @@ export default function QuestionLayout() {
   }, [id]);
 
   useEffect(() => {
-    const fetchQuizez = async () => {
-      const { data, error } = await supabase.from('quizez').select().eq('id', id);
-      if (error) {
-        console.error("Gagal fetch data:", error.message);
-      } else if (data) {
-        setQuizez(data);
-      }
-    };
-    fetchQuizez();
-
     const channel = supabase
       .channel('questions')
       .on(
@@ -163,9 +141,6 @@ export default function QuestionLayout() {
       supabase.removeChannel(channel);
     };
   }, [id]);
-
-  const [generating] = useState(false);
-  const [generatingQuestion, setGeneratingQuestion] = useState(false);
 
   const navigateToQuestion = (index: number) => {
     setCurrentQuestion(index);
@@ -236,7 +211,6 @@ export default function QuestionLayout() {
 
     const isCorrect = selectedChoice === activeQuestion.answer;
     
-    // Play sound based on result
     if (isCorrect) {
       playCorrectSound();
     } else {
@@ -256,200 +230,194 @@ export default function QuestionLayout() {
     }));
   }
 
-  useEffect(() => {
-    let correct = 0;
-    let wrong = 0;
-
-    for (const question of questions) {
-      const userAnswer = answers[question.id]; // ambil jawaban user
-      if (!userAnswer) continue; // kalau user belum jawab, skip
-
-      if (userAnswer.isCorrect) {
-        correct++;
-      } else {
-        wrong++;
-      }
-      setScore({ correct, wrong });
-    }
-  }, [questions, answers])
-
-  useEffect(() => {
-    if (questions.length > 0 && Object.keys(answers).length === questions.length) {
-      setPopUpOpen(true);
-      setTimeout(() => {
-        setPopUpOpen(false);
-      }, 5000);
-      setModalResultOpen(true);
-    }
-  }, [id, navigate, answers, questions.length,]);
+  const progressPercent = questions.length > 0 ? ((currentQuestion + 1) / questions.length) * 100 : 0;
 
   return (
-    <div>
-      <PageMeta
-        title="Questions"
-        description="This is React.js Blank Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
-      />
-      {quizez.map((quiz) => (
-        <PageBreadcrumb pageTitle={quiz.topic} />
-      ))}
-      <div className="flex">
-        <div className="w-3/4">
-          <div className="bg-white dark:border-white/[0.05] dark:bg-white/[0.03] rounded-lg border border-gray-200 transition text-start dark:text-gray-400">
-            <div className="mx-auto w-full p-3 text-center">
-              {generating || generatingQuestion ? (
-                <QuestionPlaceholder />
-              ) : (
-                <>
-                  {questions.map((question, index) => index === currentQuestion ? (
-                    <div key={question.id}>
-                      {answers[question.id] && !hideCorrect[question.id] && (
-                        <div className={`absolute top-2 right-2 px-4 py-2 rounded-md ${answers[question.id].isCorrect ? 'bg-green-500' : 'bg-red-500'
-                          } text-white font-semibold`}>
-                          {answers[question.id].isCorrect ? "Correct" : "Wrong"}
-                        </div>
-                      )}
+    <div className="min-h-screen bg-[#fafafa] selection:bg-indigo-100 selection:text-indigo-900 pb-20">
+      <PageMeta title="Quiz Mode - Quizora Learn" description="Flow state quiz answering" />
+      
+      {/* Top Navigation Bar purely for flow context */}
+      <div className="max-w-5xl mx-auto pt-6 px-4 sm:px-6 lg:px-8 mb-6 flex items-center justify-between">
+         <button onClick={() => navigate('/notes')} className="text-gray-500 hover:text-indigo-600 transition-colors flex items-center gap-2 font-bold bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 text-sm">
+            <FaArrowLeft /> Exit Quiz
+         </button>
+         <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full text-indigo-700 font-bold text-xs sm:text-sm shadow-sm border border-indigo-100">
+            <BsStars /> Quizora Quick Flow
+         </div>
+      </div>
 
-                      {answers[question.id]?.isCorrect && hideCorrect[question.id] && (
-                        <div className="mb-4 mt-2 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between border border-indigo-100 dark:border-indigo-800 gap-4">
-                          <span className="text-indigo-700 dark:text-indigo-300 font-medium text-sm text-left">
-                            💡 You've correctly answered this question before.
-                          </span>
-                          <button 
-                            onClick={() => setHideCorrect(prev => ({...prev, [question.id]: false}))}
-                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors shadow-sm whitespace-nowrap"
-                          >
-                            View Answer
-                          </button>
-                        </div>
-                      )}
-                      
-                      {answers[question.id]?.isCorrect && !hideCorrect[question.id] && (
-                        <div className="mb-4 mt-2 flex justify-end">
-                           <button 
-                            onClick={() => setHideCorrect(prev => ({...prev, [question.id]: true}))}
-                            className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 rounded-md text-xs font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                          >
-                            Hide Answer
-                          </button>
-                        </div>
-                      )}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main Quiz Card */}
+        <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden relative transition-all duration-300">
+          
+          {/* Progress Bar */}
+          <div className="h-2 w-full bg-gray-50">
+             <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out" 
+                style={{ width: `${progressPercent}%` }}
+             />
+          </div>
 
-                      <h1 className="text-2xl my-2">{question.question}</h1>
+          <div className="p-5 sm:p-8 min-h-[300px] flex flex-col justify-center">
+            {generatingQuestion ? (
+              <div className="py-12">
+                 <QuestionPlaceholder />
+              </div>
+            ) : questions.length > 0 && activeQuestion ? (
+              <div className="animate-fade-in-up">
+                
+                {/* Question Header & Meta */}
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-xs sm:text-sm font-bold tracking-widest uppercase text-gray-400">
+                    Question {currentQuestion + 1} of {questions.length}
+                  </span>
+                  
+                  {/* Status Badge */}
+                  {selected && !hideCorrect[activeQuestion.id] && (
+                    <div className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-sm ${selected.isCorrect ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                      {selected.isCorrect ? <><FaCheck/> Brilliant!</> : <><TbXboxX/> Incorrect</>}
                     </div>
-                  ) : null
                   )}
-                  <div className="grid grid-cols-[full_200px_200px_200px] gap-4 ">
-                    {questions[currentQuestion]?.choices.map((choice: string, index: number) => {
-                      let btnClass = "flex items-center justify-center p-4 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.05] transition text-start dark:text-gray-400";
-                      
-                      const showColors = selected && (!selected.isCorrect || !hideCorrect[activeQuestion.id]);
+                </div>
 
-                      if (showColors) {
-                         if (choice === activeQuestion.answer) {
-                            btnClass = "bg-green-500 border border-green-600 dark:border-green-400 text-white flex items-center justify-center p-4 rounded-lg";
-                         } else if (choice === selected?.selectedChoice) {
-                            btnClass = "bg-red-500 border border-red-600 dark:border-red-400 text-white flex items-center justify-center p-4 rounded-lg";
-                         } else {
-                            btnClass = "bg-gray-200 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center p-4 rounded-lg";
-                         }
-                      } else if (!selected) {
-                         btnClass += " hover:bg-gray-100 dark:hover:bg-white/[0.1] cursor-pointer";
-                      } else {
-                         // selected but hidden
-                         btnClass += " opacity-90";
-                      }
+                {/* Question Text */}
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-[1.4] mb-6">
+                  {activeQuestion.question}
+                </h1>
 
-                      return (
-                        <div key={index} className="">
-                          <button disabled={!!selected} onClick={() => handleAnswer(choice)} className={`mt-2 w-full h-full font-medium ${btnClass}`}>
-                            {choice}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-              <Modal isOpen={modalResult} onClose={closeModalResult} className="max-w-[700px] m-4">
-                <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-                  <div className="px-2 pr-14">
-                    <h4 className="mb-2 text-2xl text-center font-semibold text-gray-800 dark:text-white/90">
-                      Summary
-                    </h4>
-                  </div>
-                  <div className="flex flex-col justify-center items-center">
-                    <h1>Performance Stats</h1>
-                    <div className="flex gap-3">
-                      <div className="flex flex-col rounded-md p-2 border bg- border-black dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.05]">
-                        <span className="flex"><FaCheck size={30} color="lightgreen" className="mr-4" />{score.correct}</span>
-                        Correct
+                {/* Hide/View Answer Tip for returning users */}
+                {selected?.isCorrect && hideCorrect[activeQuestion.id] && (
+                  <div className="mb-6 p-4 sm:p-5 bg-indigo-50/70 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border border-indigo-100/50 gap-4">
+                    <div className="flex items-center gap-3 text-indigo-700 font-medium text-sm sm:text-base">
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm border border-indigo-100 shrink-0">
+                        <FaLightbulb className="text-yellow-500 text-base" />
                       </div>
-                      <div className="flex flex-col rounded-md p-2 border bg- border-black dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.05]">
-                        <span className="flex"><TbXboxX size={30} color="red" className="mr-4" />{score.wrong}</span>
-                        Wrong
-                      </div>
+                      You've flawlessly answered this before!
                     </div>
+                    <button 
+                      onClick={() => setHideCorrect(prev => ({...prev, [activeQuestion.id]: false}))}
+                      className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-xs sm:text-sm font-bold hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm whitespace-nowrap"
+                    >
+                      Reveal Answer
+                    </button>
                   </div>
-                  <h1>This window will automaticly closed after 10 Seconds</h1>
+                )}
+
+                {/* Choices Grid */}
+                <div className="flex flex-col gap-3">
+                  {activeQuestion.choices.map((choice: string, index: number) => {
+                    const isSelected = selected && selected.selectedChoice === choice;
+                    const isActualAnswer = choice === activeQuestion.answer;
+                    const showResults = selected && (!selected.isCorrect || !hideCorrect[activeQuestion.id]);
+
+                    let btnClass = "w-full p-3 sm:p-4 text-left rounded-xl sm:rounded-2xl border-2 transition-all duration-200 flex items-center justify-between group outline-none ";
+                    
+                    if (showResults) {
+                       if (isActualAnswer) {
+                          btnClass += "bg-green-50 border-green-500 text-green-900 shadow-[0_4px_20px_rgba(34,197,94,0.15)] z-10";
+                       } else if (isSelected) {
+                          btnClass += "bg-red-50 border-red-500 text-red-900 shadow-[0_4px_20px_rgba(239,68,68,0.15)] z-10";
+                       } else {
+                          btnClass += "bg-gray-50 border-gray-100 text-gray-400 opacity-60";
+                       }
+                    } else if (!selected) {
+                       btnClass += "bg-white border-gray-100 hover:border-indigo-300 hover:bg-indigo-50/50 hover:shadow-md text-gray-800 cursor-pointer";
+                    } else {
+                       // selected but hidden
+                       btnClass += "bg-white border-gray-100 text-gray-400 opacity-60";
+                    }
+
+                    return (
+                      <button 
+                        key={index}
+                        disabled={!!selected} 
+                        onClick={() => handleAnswer(choice)} 
+                        className={btnClass}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4 max-w-[90%]">
+                          <div className={`shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-sm sm:text-base border transition-colors ${
+                            showResults && isActualAnswer ? "bg-green-100 border-green-200 text-green-700" :
+                            showResults && isSelected ? "bg-red-100 border-red-200 text-red-700" :
+                            !selected ? "bg-gray-50 border-gray-200 text-gray-500 group-hover:bg-indigo-50 group-hover:border-indigo-200 group-hover:text-indigo-600" : 
+                            "bg-gray-50 border-gray-100 text-gray-400"
+                          }`}>
+                             {String.fromCharCode(65 + index)}
+                          </div>
+                          <span className="text-base sm:text-lg font-semibold leading-relaxed pr-3 break-words text-left">{choice}</span>
+                        </div>
+                        
+                        {/* Custom Radio Circle for visual feedback */}
+                        <div className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shadow-sm ${
+                          showResults && isActualAnswer ? "border-green-500 bg-green-500 text-white" :
+                          showResults && isSelected ? "border-red-500 bg-red-500 text-white" :
+                          !selected ? "border-gray-200 group-hover:border-indigo-400 bg-white" : "border-gray-100 bg-gray-50"
+                        }`}>
+                           {showResults && isActualAnswer && <FaCheck size={10} />}
+                           {showResults && isSelected && !isActualAnswer && <TbXboxX size={12} />}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              </Modal>
-              <Modal isOpen={popUp} onClose={closePopUp} className="max-w-[700px] m-4 transition">
-                <div className="no-scrollbar flex flex-col items-center justify-center relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-                  <div className="flex justify-center">
-                    <IoIosCheckmarkCircle color="lightgreen" size={70} />
-                  </div>
-                  <h1 className="text-2xl mt-4">
-                    Well Done 🎉
-                  </h1>
-                  <p>You've answered all the question</p>
-                  <div className="flex items-center gap-2 mt-3">
-                    <AiOutlineLoading3Quarters size={20} color="blue" className="animate-spin" />
-                    <p>Calculating the Result..</p>
-                  </div>
+
+              </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <AiOutlineLoading3Quarters className="animate-spin text-indigo-600 text-4xl mb-4" />
+                    <p className="text-gray-500 font-medium">Loading Quiz Data...</p>
                 </div>
-              </Modal>
-              <div className="mt-6 flex justify-between">
+            )}
+          </div>
+
+          {/* Footer Controls */}
+          {questions.length > 0 && !generatingQuestion && (
+             <div className="bg-gray-50/80 border-t border-gray-100 p-4 sm:px-8 flex items-center justify-between mt-auto">
                 <button
                   onClick={prevQuestion}
-                  className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-600"
+                  disabled={currentQuestion === 0}
+                  className="px-4 py-2 font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-200/50 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 >
-                  Prev
+                  Previous
                 </button>
-                <h1>Question {currentQuestion + 1} / {questions.length}</h1>
-                <button
-                  onClick={nextQuestion}
-                  className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-600"
-                >
-                  {currentQuestion === questions.length - 1 ? 'Generate New Question' : 'Next'}
-                </button>
-                {/* <button
-              onClick={handleResult}
-              className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-600"
-            >
-              Submit Quiz
-            </button> */}
-              </div>
-            </div>
-          </div>
+
+                {/* The "Flow" Continue Button */}
+                <div className="flex-1 flex justify-end">
+                   {selected ? (
+                     <button
+                       onClick={nextQuestion}
+                       className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-lg shadow-[0_4px_14px_0_rgb(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:-translate-y-0.5 transition-all flex items-center gap-2 animate-fade-in-up"
+                     >
+                       {currentQuestion === questions.length - 1 ? 'Generate New Question' : 'Next Question'} <FaArrowRight size={14}/>
+                     </button>
+                   ) : (
+                      <div className="px-6 py-2.5 text-gray-400 font-medium text-sm sm:text-base">
+                         Select an answer
+                      </div>
+                   )}
+                </div>
+             </div>
+          )}
         </div>
-        <div className="w-1/4 ml-4">
-          <div className="bg-white dark:border-white/[0.05] dark:bg-white/[0.03] rounded-lg border border-gray-200 transition text-start dark:text-gray-400 p-4">
-            <h2 className="text-lg font-semibold mb-4">Questions</h2>
-            <div className="flex flex-wrap">
+        
+        {/* Navigation Dots (Optional, keeping it below for context but minimalistic) */}
+        {!generatingQuestion && questions.length > 0 && (
+           <div className="mt-8 flex flex-wrap justify-center gap-2 px-4">
               {questions.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => navigateToQuestion(index)}
-                  className={`w-10 h-10 rounded-full mx-1 my-1 ${index === currentQuestion ? 'bg-blue-500 text-white' : 'bg-gray-300'
-                    }`}
-                  style={{ flex: '0 0 calc(10% - 8px)' }}
-                >
-                  {index + 1}
-                </button>
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                     index === currentQuestion 
+                        ? 'bg-indigo-600 w-8' 
+                        : answers[questions[index].id] 
+                           ? (answers[questions[index].id].isCorrect ? 'bg-green-400' : 'bg-red-400') 
+                           : 'bg-gray-200 hover:bg-gray-300'
+                  }`}
+                  title={`Question ${index + 1}`}
+                />
               ))}
-            </div>
-          </div>
-        </div>
+           </div>
+        )}
       </div>
     </div>
   );
