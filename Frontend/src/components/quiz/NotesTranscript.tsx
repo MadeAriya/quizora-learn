@@ -153,19 +153,13 @@ export default function NotesTranscript() {
         setMessages((prev) => [...prev, userMsg, aiPlaceholder]);
         setMessage("");
 
-        const formData = new FormData();
-        formData.append("message", userMsg.text);
-        formData.append("user_id", currentUser?.id || "");
-        formData.append("quiz_id", id || "");
-        formData.append("ai_id", aiId);
-
-        await fetch(
-            "https://n8n.ayakdev.web.id/webhook/905ef1d3-6db8-4a50-8787-d8e925c6a25e",
-            {
-                method: "POST",
-                body: formData,
-            }
-        );
+        const { AxiosConfig } = await import('../../config/AxiosConfig');
+        await AxiosConfig.post('/chat', {
+            message: userMsg.text,
+            user_id: currentUser?.id || "",
+            quiz_id: id || "",
+            ai_id: aiId
+        });
     };
 
     useEffect(() => {

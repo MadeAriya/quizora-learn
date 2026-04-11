@@ -56,7 +56,7 @@ export default function QuizFlashcard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: quizezData } = await supabase.from('quizez').select().eq('quiz_id', id);
+      const { data: quizezData } = await supabase.from('quizez').select().eq('id', id);
       if (quizezData) setQuizez(quizezData);
 
       const { data: transcriptData } = await supabase.from('transcript').select('transcribe_text').eq('quiz_id', id).single();
@@ -89,11 +89,15 @@ export default function QuizFlashcard() {
     formData.append("quiz_id", id);
 
     try {
-      const response = await fetch("https://n8n.ayakdev.web.id/webhook/a3de8bc7-e44a-4b6b-93ce-e698f92e623b", {
-        method: "POST", body: formData
+      const { AxiosConfig } = await import('../../config/AxiosConfig');
+      const response = await AxiosConfig.post('/generate/flashcards', {
+        transcript: transcript.transcribe_text || "Tidak ada transcript ditemukan",
+        user_id: currentUser?.id || "",
+        quiz_id: id
       });
-      const result = await response.json();
-      if (result.success) {
+      const result = response.data;
+      
+      if (result.flashcards && result.flashcards.length > 0) {
         await fetchQuestions();
       } else {
         setTimeout(() => {

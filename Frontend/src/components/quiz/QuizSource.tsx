@@ -43,23 +43,14 @@ export default function QuizSource() {
         setQuizLoading(true);
 
         try {
-            // Send the link to our local Node backend
-            const localBackendUrl = "http://localhost:3001/api/transcript";
+            const { AxiosConfig } = await import('../../config/AxiosConfig');
             
-            const response = await fetch(localBackendUrl,
-                {
-                    method: "POST",
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      link: link,
-                      user_id: currentUser?.id || ""
-                    })
-                },
-            );
+            const response = await AxiosConfig.post('/materials/youtube', {
+              link: link,
+              user_id: currentUser?.id || ""
+            });
 
-            const result = await response.json();
+            const result = response.data;
 
             if (result.success) {
                 setTimeout(() => {
@@ -89,14 +80,15 @@ export default function QuizSource() {
         
         setQuizLoading(true);
         try {
-            const response = await fetch("https://n8n.ayakdev.web.id/webhook/f3a1f876-1128-4cb3-9292-eddf1c8f2978",
-                {
-                    method: "POST",
-                    body: formData
-                },
-            );
+            const { AxiosConfig } = await import('../../config/AxiosConfig');
+            
+            const response = await AxiosConfig.post('/materials/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
 
-            const result = await response.json();
+            const result = response.data;
 
             if (result.success) {
                 console.log("succes")

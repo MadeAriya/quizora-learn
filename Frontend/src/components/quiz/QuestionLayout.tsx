@@ -176,13 +176,12 @@ export default function QuestionLayout() {
       formData.append('transcript', transcript);
 
       try {
-        await fetch(
-          'https://n8n.ayakdev.web.id/webhook/661ad6c1-7142-4b32-a71a-bb458abd9135',
-          {
-            method: 'POST',
-            body: formData,
-          }
-        );
+        const { AxiosConfig } = await import('../../config/AxiosConfig');
+        await AxiosConfig.post('/generate/question', {
+          user_id: currentUser?.id || '',
+          quiz_id: id || '',
+          transcript: transcript,
+        });
       } catch (error) {
         console.error('Failed to generate question:', (error as Error).message);
         setGeneratingQuestion(false);
