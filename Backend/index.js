@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { YoutubeTranscript } from 'youtube-transcript/dist/youtube-transcript.esm.js';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
@@ -7,28 +9,72 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 const app = express();
-app.use(cors()); // Allow Vite frontend to communicate
-app.use(express.json());
+
+// --- Fix #4: Security middleware ---
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+app.use(limiter);
+
+// --- Fix #3: Restricted CORS ---
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: '1mb' }));
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// --- Fix #5: Webhook URL from env ---
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
+if (!N8N_WEBHOOK_URL) {
+  console.warn('[Backend] WARNING: N8N_WEBHOOK_URL is not set in .env');
+}
+
+// --- Fix #6: Validation helpers ---
+function isValidUUID(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+function isValidYouTubeUrl(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/.test(str);
+}
+
 // Helper to extract the 11-character video ID from any YouTube URL
 function extractVideoId(urlOrId) {
-  const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = urlOrId.match(regExp);
   if (match && match[2].length === 11) {
     return match[2];
   }
-  // Try to return as-is if it's already an 11-char ID
   return urlOrId;
 }
 
 // Extract chunks from HTML for Doomscroll Explanation Cards
 function extractChunksFromHtml(html) {
   if (!html) return [];
-  // match block level elements commonly used in CKEditor
   const matches = html.match(/<(p|h[1-6]|ul|ol|blockquote|table|figure)[^>]*>[\s\S]*?<\/\1>/gi);
   if (matches && matches.length > 0) {
     return matches.map((m, i) => ({ id: `chunk-${i}`, html: m }));
@@ -38,9 +84,19 @@ function extractChunksFromHtml(html) {
 
 app.post('/api/learning/generate', async (req, res) => {
   const { user_id, quiz_id, confidenceScore = 50, seenIds = [] } = req.body;
-  
-  if (!quiz_id) {
-    return res.status(400).json({ error: 'quiz_id is required' });
+
+  // --- Fix #6: Validate inputs ---
+  if (!quiz_id || typeof quiz_id !== 'string') {
+    return res.status(400).json({ error: 'quiz_id is required and must be a string' });
+  }
+  if (user_id && typeof user_id !== 'string') {
+    return res.status(400).json({ error: 'user_id must be a string' });
+  }
+  if (!Array.isArray(seenIds)) {
+    return res.status(400).json({ error: 'seenIds must be an array' });
+  }
+  if (typeof confidenceScore !== 'number' || confidenceScore < 0 || confidenceScore > 100) {
+    return res.status(400).json({ error: 'confidenceScore must be a number between 0 and 100' });
   }
 
   try {
@@ -63,7 +119,6 @@ app.post('/api/learning/generate', async (req, res) => {
     const es = unseenExplanations.length ? unseenExplanations : explanations;
 
     // Adaptive probability based on confidenceScore
-    let pool = [];
     const rand = Math.random() * 100;
     let selectedType = 'quiz';
 
@@ -116,7 +171,7 @@ app.post('/api/learning/generate', async (req, res) => {
         type: selectedType,
         id: itemId,
         content: selectedItem,
-        difficulty: 'medium', // dynamic difficulty could be added
+        difficulty: 'medium',
         topic: 'Doomscroll'
       }
     });
@@ -127,30 +182,46 @@ app.post('/api/learning/generate', async (req, res) => {
 });
 
 app.post('/api/learning/feedback', (req, res) => {
-  // Acknowledge receipt. In a fuller version, we could save this to a `user_performance` table
+  const { item_id, performanceDelta } = req.body;
+
+  // --- Fix #6: Basic validation ---
+  if (!item_id || typeof item_id !== 'string') {
+    return res.status(400).json({ error: 'item_id is required' });
+  }
+  if (performanceDelta !== undefined && typeof performanceDelta !== 'number') {
+    return res.status(400).json({ error: 'performanceDelta must be a number' });
+  }
+
   res.json({ success: true });
 });
 
 app.post('/api/transcript', async (req, res) => {
   const { link, user_id } = req.body;
 
-  if (!link) {
-    return res.status(400).json({ success: false, error: 'link is required' });
+  // --- Fix #6: Validate YouTube URL ---
+  if (!link || typeof link !== 'string') {
+    return res.status(400).json({ success: false, error: 'link is required and must be a string' });
+  }
+  if (!isValidYouTubeUrl(link)) {
+    return res.status(400).json({ success: false, error: 'link must be a valid YouTube URL' });
+  }
+  if (user_id && typeof user_id !== 'string') {
+    return res.status(400).json({ success: false, error: 'user_id must be a string' });
+  }
+
+  if (!N8N_WEBHOOK_URL) {
+    return res.status(500).json({ success: false, error: 'Webhook URL not configured' });
   }
 
   const videoId = extractVideoId(link);
 
   try {
     console.log(`[Backend] Fetching transcript for video ID: ${videoId}...`);
-    // 1. Get the transcript
     const transcriptBits = await YoutubeTranscript.fetchTranscript(videoId);
     const fullText = transcriptBits.map(t => t.text).join(' ');
 
-    // 2. Send to your n8n webhook
-    const webhookUrl = "https://n8n.ayakdev.web.id/webhook/d21b3b4e-1ca4-4d3b-9dd3-3c583a90eedc";
-    
     console.log(`[Backend] Transcript extracted! Length: ${fullText.length}. Sending to n8n webhook...`);
-    const n8nResponse = await fetch(webhookUrl, {
+    const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ videoId, link, user_id: user_id || "", transcript: fullText })
