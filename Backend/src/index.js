@@ -62,11 +62,16 @@ app.use('/api/learning', learningRouter);
 app.use(errorHandler);
 
 // --- Start server ---
-app.listen(config.port, () => {
-  console.log(`\n🚀 Quizora Learn Backend v2.0.0`);
-  console.log(`   Port: ${config.port}`);
-  console.log(`   Environment: ${config.nodeEnv}`);
-  console.log(`   Primary AI: ${config.ai.primaryProvider}`);
-  console.log(`   Fallback AI: ${config.ai.fallbackProvider}`);
-  console.log(`   CORS: ${config.corsOrigins.join(', ')}\n`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(config.port, () => {
+    console.log(`\n🚀 Quizora Learn Backend v2.0.0`);
+    console.log(`   Port: ${config.port}`);
+    console.log(`   Environment: ${config.nodeEnv}`);
+    console.log(`   Primary AI: ${config.ai.primaryProvider}`);
+    console.log(`   Fallback AI: ${config.ai.fallbackProvider}`);
+    console.log(`   CORS: ${config.corsOrigins.join(', ')}\n`);
+  });
+}
+
+// Export for Vercel Serverless Function
+export default app;
