@@ -20,24 +20,67 @@ export function isValidYouTubeUrl(str) {
   return /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/.test(str);
 }
 
-/**
- * Fetch transcript using youtube-transcript package (Innertube API)
- */
-async function fetchViaInnertubeAPI(videoId) {
-  console.log(`[YouTube] Trying Innertube API via youtube-transcript package...`);
-  
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function cleanTranscriptText(raw) {
+  return raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/WEBVTT/g, '')
+    .replace(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+// ─── Strategy 1: Supadata API (works from datacenter IPs) ───────────────────
+
+async function fetchViaSupadata(videoId) {
+  const apiKey = process.env.SUPADATA_API_KEY;
+  if (!apiKey) throw new Error('SUPADATA_API_KEY not configured');
+
+  console.log(`[YouTube] Strategy 1: Supadata API...`);
+
+  const url = `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=true`;
+  const res = await fetch(url, {
+    headers: { 'x-api-key': apiKey },
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Supadata returned ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  const fullText = (data.content || data.text || '').trim();
+
+  if (!fullText || fullText.length < 10) {
+    throw new Error('Supadata returned empty transcript');
+  }
+
+  console.log(`[YouTube] Supadata: SUCCESS! ${fullText.length} characters`);
+  return fullText;
+}
+
+// ─── Strategy 2: youtube-transcript npm package (InnerTube + web scraping) ──
+
+async function fetchViaNpmPackage(videoId) {
+  console.log(`[YouTube] Strategy 2: youtube-transcript npm package...`);
+
   let segments;
   try {
-    // Try English first
     segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-  } catch (langErr) {
-    // If English not available, try any available language
-    console.log(`[YouTube] English transcript not available, trying any language...`);
+  } catch {
+    console.log(`[YouTube]   English not available, trying any language...`);
     segments = await YoutubeTranscript.fetchTranscript(videoId);
   }
 
   if (!segments || segments.length === 0) {
-    throw new Error(`No transcript segments returned for video ${videoId}`);
+    throw new Error('No transcript segments returned');
   }
 
   const fullText = segments
@@ -50,14 +93,15 @@ async function fetchViaInnertubeAPI(videoId) {
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  console.log(`[YouTube] Innertube transcript extracted! Length: ${fullText.length} characters`);
+  console.log(`[YouTube]   npm package: SUCCESS! ${fullText.length} characters`);
   return fullText;
 }
 
-/**
- * Fetch transcript using Piped API instances (fallback)
- */
+// ─── Strategy 3: Piped API instances ────────────────────────────────────────
+
 async function fetchViaPipedAPI(videoId) {
+  console.log(`[YouTube] Strategy 3: Piped API instances...`);
+
   const instances = [
     'https://pipedapi.kavin.rocks',
     'https://api.piped.yt',
@@ -70,14 +114,14 @@ async function fetchViaPipedAPI(videoId) {
 
   for (const baseUrl of instances) {
     try {
-      console.log(`[YouTube] Trying Piped instance: ${baseUrl}`);
+      console.log(`[YouTube]   Trying: ${baseUrl}`);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
       const res = await fetch(`${baseUrl}/streams/${videoId}`, { signal: controller.signal });
       clearTimeout(timeout);
 
-      if (!res.ok) throw new Error(`${baseUrl} returned ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
       if (!data.subtitles || data.subtitles.length === 0) {
@@ -90,25 +134,16 @@ async function fetchViaPipedAPI(videoId) {
                  || data.subtitles[0];
 
       const subsRes = await fetch(track.url);
-      if (!subsRes.ok) throw new Error(`Failed to fetch subtitle content from ${baseUrl}`);
-      let fullText = await subsRes.text();
+      if (!subsRes.ok) throw new Error(`Failed to fetch subtitle content`);
 
-      fullText = fullText
-        .replace(/<[^>]*>/g, ' ')
-        .replace(/WEBVTT/g, '')
-        .replace(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/g, '')
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/[\r\n]+/g, ' ')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
+      const fullText = cleanTranscriptText(await subsRes.text());
 
-      console.log(`[YouTube] Piped transcript extracted via ${baseUrl}! Length: ${fullText.length} characters`);
-      return fullText;
-
+      if (fullText && fullText.length > 10) {
+        console.log(`[YouTube]   ${baseUrl}: SUCCESS! ${fullText.length} characters`);
+        return fullText;
+      }
     } catch (error) {
-      console.warn(`[YouTube] Piped instance ${baseUrl} failed:`, error.message);
+      console.warn(`[YouTube]   ${baseUrl}: ${error.message}`);
       lastError = error;
       if (error.message.includes('Transcript is disabled')) throw error;
     }
@@ -117,31 +152,43 @@ async function fetchViaPipedAPI(videoId) {
   throw new Error(`All Piped instances failed. Last: ${lastError?.message}`);
 }
 
+// ─── Main: 3-tier fallback ──────────────────────────────────────────────────
+
 /**
- * Fetch YouTube transcript with multi-strategy fallback
- * Strategy 1: Innertube API (direct, via youtube-transcript package)
- * Strategy 2: Piped API instances (proxy fallback)
+ * Fetch YouTube transcript with 3-tier fallback:
+ *   1. Supadata API     — works reliably from datacenter IPs (Vercel)
+ *   2. youtube-transcript — InnerTube + web scraping (works locally, may fail on Vercel)
+ *   3. Piped API          — third-party proxy (unreliable but free)
  *
  * @param {string} videoId - 11-character video ID
  * @returns {string} Full transcript text
  */
 export async function fetchYouTubeTranscript(videoId) {
-  console.log(`[YouTube] Fetching transcript for video ID: ${videoId}`);
+  console.log(`[YouTube] ═══ Fetching transcript for: ${videoId} ═══`);
 
-  // Strategy 1: Innertube API (most reliable from serverless)
-  try {
-    return await fetchViaInnertubeAPI(videoId);
-  } catch (err) {
-    console.warn(`[YouTube] Innertube API failed: ${err.message}`);
+  const strategies = [
+    { name: 'Supadata API', fn: fetchViaSupadata },
+    { name: 'NPM Package', fn: fetchViaNpmPackage },
+    { name: 'Piped API', fn: fetchViaPipedAPI },
+  ];
+
+  const errors = [];
+
+  for (const strategy of strategies) {
+    try {
+      const result = await strategy.fn(videoId);
+      if (result && result.length > 10) {
+        console.log(`[YouTube] ═══ Success via ${strategy.name} (${result.length} chars) ═══`);
+        return result;
+      }
+    } catch (err) {
+      console.warn(`[YouTube] ${strategy.name} failed: ${err.message}`);
+      errors.push(`${strategy.name}: ${err.message}`);
+    }
   }
 
-  // Strategy 2: Piped API fallback
-  try {
-    return await fetchViaPipedAPI(videoId);
-  } catch (err) {
-    console.warn(`[YouTube] Piped API fallback failed: ${err.message}`);
-  }
-
-  throw new Error('Failed to extract YouTube transcript. The video may not have captions enabled, or all extraction methods are currently unavailable.');
+  console.error(`[YouTube] ═══ All strategies failed ═══\n${errors.join('\n')}`);
+  throw new Error(
+    'Failed to extract YouTube transcript. The video may not have captions enabled, or all extraction methods are currently unavailable.'
+  );
 }
-
