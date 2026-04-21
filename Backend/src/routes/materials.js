@@ -72,15 +72,21 @@ router.post('/youtube', authMiddleware, async (req, res) => {
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    // 7. Generate notes (in background, don't block response)
-    generateNotes(transcript, userId, quizId, quizResult.topic)
-      .catch(err => console.error('[Materials] Notes generation failed:', err.message));
+    // 7. Generate notes (must await — Vercel kills background tasks after response)
+    let notesGenerated = false;
+    try {
+      await generateNotes(transcript, userId, quizId, quizResult.topic);
+      notesGenerated = true;
+    } catch (err) {
+      console.error('[Materials] Notes generation failed:', err.message);
+    }
 
     return res.json({
       success: true,
       quizId,
       topic: quizResult.topic,
       questionCount: quizResult.questions.length,
+      notesGenerated,
     });
   } catch (error) {
     console.error('[Materials] YouTube pipeline error:', error.message);
@@ -155,15 +161,21 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    // 7. Generate notes in background
-    generateNotes(text, userId, quizId, quizResult.topic)
-      .catch(err => console.error('[Materials] Notes generation failed:', err.message));
+    // 7. Generate notes (must await — Vercel kills background tasks after response)
+    let notesGenerated = false;
+    try {
+      await generateNotes(text, userId, quizId, quizResult.topic);
+      notesGenerated = true;
+    } catch (err) {
+      console.error('[Materials] Notes generation failed:', err.message);
+    }
 
     return res.json({
       success: true,
       quizId,
       topic: quizResult.topic,
       questionCount: quizResult.questions.length,
+      notesGenerated,
     });
   } catch (error) {
     console.error('[Materials] Upload pipeline error:', error.message);
@@ -218,14 +230,21 @@ router.post('/paste', authMiddleware, async (req, res) => {
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    generateNotes(text, userId, quizId, quizResult.topic)
-      .catch(err => console.error('[Materials] Notes generation failed:', err.message));
+    // Generate notes (must await — Vercel kills background tasks after response)
+    let notesGenerated = false;
+    try {
+      await generateNotes(text, userId, quizId, quizResult.topic);
+      notesGenerated = true;
+    } catch (err) {
+      console.error('[Materials] Notes generation failed:', err.message);
+    }
 
     return res.json({
       success: true,
       quizId,
       topic: quizResult.topic,
       questionCount: quizResult.questions.length,
+      notesGenerated,
     });
   } catch (error) {
     console.error('[Materials] Paste pipeline error:', error.message);
