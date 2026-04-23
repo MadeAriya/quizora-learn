@@ -37,6 +37,8 @@ export default function DoomscrollMode() {
   // Touch swipe tracking
   const touchStartRef = useRef<number>(0);
   const touchDeltaRef = useRef<number>(0);
+  const touchStartXRef = useRef<number>(0);
+  const touchDeltaXRef = useRef<number>(0);
   
   const fetchNextItem = useCallback(async (currentSeenIds: string[], score: number) => {
     try {
@@ -116,19 +118,35 @@ export default function DoomscrollMode() {
   // Touch swipe handler for mobile
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartRef.current = e.touches[0].clientY;
+    touchStartXRef.current = e.touches[0].clientX;
     touchDeltaRef.current = 0;
+    touchDeltaXRef.current = 0;
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     touchDeltaRef.current = touchStartRef.current - e.touches[0].clientY;
+    touchDeltaXRef.current = Math.abs(touchStartXRef.current - e.touches[0].clientX);
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    // Swipe up threshold: 80px
-    if (touchDeltaRef.current > 80) {
+    // Only swipe up if vertical delta > 100px and more vertical than horizontal
+    if (touchDeltaRef.current > 100 && touchDeltaRef.current > touchDeltaXRef.current * 1.5) {
       handleNext(0);
     }
     touchDeltaRef.current = 0;
+    touchDeltaXRef.current = 0;
+  }, [handleNext]);
+
+  // Keyboard navigation for desktop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === ' ') {
+        e.preventDefault();
+        handleNext(0);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext]);
 
   if (loading && items.length === 0) {
@@ -203,7 +221,7 @@ export default function DoomscrollMode() {
                    w-full h-full max-h-[calc(100dvh-0.75rem)] sm:max-h-[calc(100dvh-1.5rem)] lg:max-h-[calc(100dvh-2rem)]
                    transition-all duration-500 
                    rounded-xl sm:rounded-2xl lg:rounded-3xl 
-                   overflow-hidden
+                   overflow-y-auto
                    ${isActive 
                      ? 'scale-100 opacity-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_0_40px_rgba(79,70,229,0.15)]' 
                      : 'scale-[0.95] opacity-30 blur-[2px]'}

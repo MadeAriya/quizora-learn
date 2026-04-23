@@ -398,7 +398,7 @@ export default function QuizFlashcard() {
                         question.id === currentQuestionId ? (
                            <div 
                              key={question.id || index}
-                             className="flex-1 w-full flex items-center justify-center cursor-pointer perspective-1000 h-[350px] sm:h-[400px]"
+                             className="flex-1 w-full flex items-center justify-center cursor-pointer perspective-1000 h-[300px] sm:h-[350px] md:h-[400px]"
                              onClick={() => setIsFlipped(!isFlipped)}
                            >
                              <div className={`w-full h-full relative preserve-3d transition-transform duration-700 ${isFlipped ? 'rotate-y-180' : ''}`}>
@@ -410,10 +410,10 @@ export default function QuizFlashcard() {
                                       {isAnswerFirst ? 'ANSWER' : 'QUESTION'}
                                     </span>
                                  </div>
-                                 <div className="flex-1 flex items-center justify-center w-full px-4 overflow-y-auto no-scrollbar py-12">
-                                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-center leading-relaxed whitespace-pre-wrap">
+                                 <div className="flex-1 flex items-center w-full px-4 overflow-y-auto custom-scrollbar py-12">
+                                    <p className={`font-bold text-gray-900 dark:text-white text-center leading-relaxed whitespace-pre-wrap break-words w-full ${(isAnswerFirst ? question.answer : question.question).length > 200 ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl md:text-3xl'}`}>
                                       {isAnswerFirst ? question.answer : question.question}
-                                    </h1>
+                                    </p>
                                  </div>
                                  <div className="absolute bottom-6 flex items-center gap-2 text-gray-400 dark:text-gray-500 font-medium text-sm animate-pulse">
                                     <span>👆</span> Click to flip
@@ -427,10 +427,10 @@ export default function QuizFlashcard() {
                                       {isAnswerFirst ? 'QUESTION' : 'ANSWER'}
                                     </span>
                                  </div>
-                                 <div className="flex-1 flex items-center justify-center w-full px-4 overflow-y-auto no-scrollbar py-12">
-                                    <h1 className="text-xl sm:text-2xl font-bold text-indigo-600 dark:text-[#a5c2ff] text-center leading-relaxed whitespace-pre-wrap">
+                                 <div className="flex-1 flex items-center w-full px-4 overflow-y-auto custom-scrollbar py-12">
+                                    <p className={`font-bold text-indigo-600 dark:text-[#a5c2ff] text-center leading-relaxed whitespace-pre-wrap break-words w-full ${(isAnswerFirst ? question.question : question.answer).length > 200 ? 'text-sm sm:text-base' : 'text-lg sm:text-xl md:text-2xl'}`}>
                                       {isAnswerFirst ? question.question : question.answer}
-                                    </h1>
+                                    </p>
                                  </div>
                                  <div className="absolute bottom-6 flex items-center gap-2 text-gray-400 dark:text-gray-500 font-medium text-sm">
                                     <span>📘</span> Tap to flip back

@@ -16,7 +16,7 @@ export default function ExplanationCard({ content, onComplete }: ExplanationCard
   const sanitizedHtml = DOMPurify.sanitize(content.html);
 
   return (
-    <div className="flex-1 flex flex-col px-5 py-6 sm:p-8 lg:px-16 xl:px-24 justify-between h-full relative z-10 w-full overflow-hidden">
+    <div className="flex-1 flex flex-col px-5 py-6 sm:p-8 lg:px-16 xl:px-24 justify-between h-full relative z-10 w-full overflow-y-auto">
       <div className="w-full max-w-4xl mx-auto flex flex-col flex-1 min-h-0">
       {/* Badge */}
       <div className="mb-4 sm:mb-6 inline-flex px-2.5 py-0.5 sm:px-3 sm:py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 text-[10px] sm:text-xs font-bold rounded-full border border-blue-200 dark:border-blue-500/30 uppercase tracking-wider w-fit shrink-0 shadow-sm">

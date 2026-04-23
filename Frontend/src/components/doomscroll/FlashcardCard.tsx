@@ -14,7 +14,7 @@ export default function FlashcardCard({ content, onComplete }: FlashcardCardProp
   const [isFlipped, setIsFlipped] = useState(false);
 
   return (
-    <div className="flex-1 flex flex-col px-5 py-6 sm:p-6 lg:px-16 xl:px-24 h-full relative z-10 w-full overflow-hidden">
+    <div className="flex-1 flex flex-col px-5 py-6 sm:p-6 lg:px-16 xl:px-24 h-full relative z-10 w-full overflow-y-auto">
       <div className="w-full max-w-4xl mx-auto flex flex-col flex-1 min-h-0">
       {/* Badge */}
       <div className="mb-3 sm:mb-4 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 text-[10px] sm:text-xs font-bold rounded-full border border-orange-200 dark:border-orange-500/30 uppercase tracking-wider w-fit shadow-sm shrink-0">
@@ -30,13 +30,17 @@ export default function FlashcardCard({ content, onComplete }: FlashcardCardProp
           
           {/* Front */}
           <div className="absolute inset-0 backface-hidden bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-5 py-6 sm:p-8 lg:p-12 text-center shadow-xl dark:shadow-2xl">
-            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold leading-relaxed text-gray-900 dark:text-gray-100 break-words w-full">{content.question}</h2>
-            <div className="absolute bottom-4 sm:bottom-6 text-gray-400 dark:text-gray-500 text-xs sm:text-sm animate-pulse">Tap to reveal</div>
+            <div className="flex-1 flex items-center w-full overflow-y-auto custom-scrollbar">
+              <h2 className={`font-bold leading-relaxed text-gray-900 dark:text-gray-100 break-words w-full ${content.question.length > 200 ? 'text-base sm:text-lg lg:text-xl' : 'text-lg sm:text-2xl lg:text-3xl'}`}>{content.question}</h2>
+            </div>
+            <div className="mt-2 shrink-0 text-gray-400 dark:text-gray-500 text-xs sm:text-sm animate-pulse">Tap to reveal</div>
           </div>
 
           {/* Back */}
           <div className="absolute inset-0 backface-hidden bg-indigo-500 dark:bg-indigo-600 border border-indigo-300 dark:border-indigo-400 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center px-5 py-6 sm:p-8 lg:p-12 text-center rotate-y-180 shadow-[0_10px_40px_rgba(99,102,241,0.2)] dark:shadow-[0_0_40px_rgba(79,70,229,0.3)]">
-            <h2 className="text-base sm:text-xl lg:text-2xl font-bold leading-relaxed text-white whitespace-pre-wrap break-words w-full">{content.answer}</h2>
+            <div className="flex-1 flex items-center w-full overflow-y-auto custom-scrollbar">
+              <p className={`font-bold leading-relaxed text-white whitespace-pre-wrap break-words w-full ${content.answer.length > 200 ? 'text-sm sm:text-base lg:text-lg' : 'text-base sm:text-xl lg:text-2xl'}`}>{content.answer}</p>
+            </div>
           </div>
 
         </div>
