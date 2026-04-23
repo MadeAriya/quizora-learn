@@ -410,7 +410,7 @@ export default function QuizFlashcard() {
                                       {isAnswerFirst ? 'ANSWER' : 'QUESTION'}
                                     </span>
                                  </div>
-                                 <div className="flex-1 flex items-center w-full px-4 overflow-y-auto custom-scrollbar py-12">
+                                 <div className="flex-1 flex items-center w-full px-4 overflow-y-auto custom-scrollbar pt-16 pb-14 sm:py-12">
                                     <p className={`font-bold text-gray-900 dark:text-white text-center leading-relaxed whitespace-pre-wrap break-words w-full ${(isAnswerFirst ? question.answer : question.question).length > 200 ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl md:text-3xl'}`}>
                                       {isAnswerFirst ? question.answer : question.question}
                                     </p>
@@ -427,7 +427,7 @@ export default function QuizFlashcard() {
                                       {isAnswerFirst ? 'QUESTION' : 'ANSWER'}
                                     </span>
                                  </div>
-                                 <div className="flex-1 flex items-center w-full px-4 overflow-y-auto custom-scrollbar py-12">
+                                 <div className="flex-1 flex items-center w-full px-4 overflow-y-auto custom-scrollbar pt-16 pb-14 sm:py-12">
                                     <p className={`font-bold text-indigo-600 dark:text-[#a5c2ff] text-center leading-relaxed whitespace-pre-wrap break-words w-full ${(isAnswerFirst ? question.question : question.answer).length > 200 ? 'text-sm sm:text-base' : 'text-lg sm:text-xl md:text-2xl'}`}>
                                       {isAnswerFirst ? question.question : question.answer}
                                     </p>
