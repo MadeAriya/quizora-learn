@@ -34,7 +34,7 @@ router.post('/generate', async (req, res) => {
     const [{ data: questions }, { data: flashcards }, { data: notesData }] = await Promise.all([
       supabaseAdmin.from('questions').select('*').eq('quiz_id', quiz_id),
       supabaseAdmin.from('flashcard').select('*').eq('quiz_id', quiz_id),
-      supabaseAdmin.from('notes').select('*').eq('quiz_id', quiz_id).single(),
+      supabaseAdmin.from('notes').select('*').eq('quiz_id', quiz_id).maybeSingle(),
     ]);
 
     const explanations = notesData ? extractChunksFromHtml(notesData.html) : [];

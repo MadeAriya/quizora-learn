@@ -13,6 +13,10 @@ import { supabaseAdmin } from '../../config/supabase.js';
  * @returns {{ html: string }}
  */
 export async function generateNotes(text, userId, quizId, topic = '') {
+  if (!text || typeof text !== 'string' || text.trim().length < 10) {
+    throw new Error('Insufficient text to generate notes');
+  }
+
   console.log(`[Notes] Generating HTML notes for quiz ${quizId}...`);
 
   const result = await aiRouter.generate(
@@ -23,6 +27,10 @@ export async function generateNotes(text, userId, quizId, topic = '') {
 
   const html = result.text;
 
+  if (!html || html.trim().length === 0) {
+    throw new Error('AI returned empty notes content');
+  }
+
   // Store in notes table
   const { error } = await supabaseAdmin.from('notes').insert({
     html,
@@ -32,7 +40,7 @@ export async function generateNotes(text, userId, quizId, topic = '') {
   });
 
   if (error) {
-    console.warn(`[Notes] Failed to store notes: ${error.message}`);
+    throw new Error(`Failed to store notes: ${error.message}`);
   }
 
   console.log(`[Notes] Notes generated and stored for quiz ${quizId}`);

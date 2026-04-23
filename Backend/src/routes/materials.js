@@ -63,22 +63,28 @@ router.post('/youtube', authMiddleware, async (req, res) => {
       created_at: quizRow.created_at,
     });
 
-    // 5. Generate quiz questions (10 MCQ)
-    const quizResult = await generateQuiz(transcript, userId, quizId);
+    // 5. Generate quiz + notes in parallel (reduces Vercel timeout risk)
+    const [quizSettled, notesSettled] = await Promise.allSettled([
+      generateQuiz(transcript, userId, quizId),
+      generateNotes(transcript, userId, quizId),
+    ]);
 
-    // 6. Update quiz topic
+    // 6. Handle quiz result
+    if (quizSettled.status === 'rejected') {
+      throw new Error(`Quiz generation failed: ${quizSettled.reason?.message}`);
+    }
+    const quizResult = quizSettled.value;
+
+    // 7. Update quiz topic
     await supabaseAdmin
       .from('quizez')
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    // 7. Generate notes (must await — Vercel kills background tasks after response)
-    let notesGenerated = false;
-    try {
-      await generateNotes(transcript, userId, quizId, quizResult.topic);
-      notesGenerated = true;
-    } catch (err) {
-      console.error('[Materials] Notes generation failed:', err.message);
+    // 8. Check notes result
+    const notesGenerated = notesSettled.status === 'fulfilled';
+    if (!notesGenerated) {
+      console.error('[Materials] Notes generation failed:', notesSettled.reason?.message);
     }
 
     return res.json({
@@ -152,22 +158,28 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
       created_at: quizRow.created_at,
     });
 
-    // 5. Generate quiz
-    const quizResult = await generateQuiz(text, userId, quizId);
+    // 5. Generate quiz + notes in parallel
+    const [quizSettled, notesSettled] = await Promise.allSettled([
+      generateQuiz(text, userId, quizId),
+      generateNotes(text, userId, quizId),
+    ]);
 
-    // 6. Update topic
+    // 6. Handle quiz result
+    if (quizSettled.status === 'rejected') {
+      throw new Error(`Quiz generation failed: ${quizSettled.reason?.message}`);
+    }
+    const quizResult = quizSettled.value;
+
+    // 7. Update topic
     await supabaseAdmin
       .from('quizez')
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    // 7. Generate notes (must await — Vercel kills background tasks after response)
-    let notesGenerated = false;
-    try {
-      await generateNotes(text, userId, quizId, quizResult.topic);
-      notesGenerated = true;
-    } catch (err) {
-      console.error('[Materials] Notes generation failed:', err.message);
+    // 8. Check notes result
+    const notesGenerated = notesSettled.status === 'fulfilled';
+    if (!notesGenerated) {
+      console.error('[Materials] Notes generation failed:', notesSettled.reason?.message);
     }
 
     return res.json({
@@ -223,20 +235,25 @@ router.post('/paste', authMiddleware, async (req, res) => {
       created_at: quizRow.created_at,
     });
 
-    const quizResult = await generateQuiz(text, userId, quizId);
+    // Generate quiz + notes in parallel
+    const [quizSettled, notesSettled] = await Promise.allSettled([
+      generateQuiz(text, userId, quizId),
+      generateNotes(text, userId, quizId),
+    ]);
+
+    if (quizSettled.status === 'rejected') {
+      throw new Error(`Quiz generation failed: ${quizSettled.reason?.message}`);
+    }
+    const quizResult = quizSettled.value;
 
     await supabaseAdmin
       .from('quizez')
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    // Generate notes (must await — Vercel kills background tasks after response)
-    let notesGenerated = false;
-    try {
-      await generateNotes(text, userId, quizId, quizResult.topic);
-      notesGenerated = true;
-    } catch (err) {
-      console.error('[Materials] Notes generation failed:', err.message);
+    const notesGenerated = notesSettled.status === 'fulfilled';
+    if (!notesGenerated) {
+      console.error('[Materials] Notes generation failed:', notesSettled.reason?.message);
     }
 
     return res.json({

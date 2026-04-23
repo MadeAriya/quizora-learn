@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { supabaseAdmin } from '../config/supabase.js';
 import { generateSingleQuestion } from '../services/generation/quiz.js';
 import { generateFlashcards } from '../services/generation/flashcard.js';
+import { generateNotes } from '../services/generation/notes.js';
 
 const router = Router();
 
@@ -65,6 +66,62 @@ router.post('/flashcards', authMiddleware, async (req, res) => {
     return res.json(result);
   } catch (error) {
     console.error('[Generate] Flashcard generation error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/generate/notes
+ * Generate or regenerate notes for a quiz
+ */
+router.post('/notes', authMiddleware, async (req, res) => {
+  const { quiz_id, user_id } = req.body;
+  const userId = user_id || req.userId;
+
+  if (!quiz_id) {
+    return res.status(400).json({ error: 'quiz_id is required' });
+  }
+
+  try {
+    // Check if notes already exist
+    const { data: existing } = await supabaseAdmin
+      .from('notes')
+      .select('id')
+      .eq('quiz_id', quiz_id)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(409).json({ error: 'Notes already exist for this quiz' });
+    }
+
+    // Fetch transcript
+    const { data: transcriptData } = await supabaseAdmin
+      .from('transcript')
+      .select('transcribe_text')
+      .eq('quiz_id', quiz_id)
+      .single();
+
+    if (!transcriptData?.transcribe_text) {
+      return res.status(400).json({ error: 'No transcript found for this quiz' });
+    }
+
+    // Fetch quiz topic
+    const { data: quizData } = await supabaseAdmin
+      .from('quizez')
+      .select('topic')
+      .eq('id', quiz_id)
+      .single();
+
+    const result = await generateNotes(
+      transcriptData.transcribe_text,
+      userId,
+      quiz_id,
+      quizData?.topic || ''
+    );
+
+    return res.json({ success: true, html: result.html });
+  } catch (error) {
+    console.error('[Generate] Notes generation error:', error.message);
     return res.status(500).json({ error: error.message });
   }
 });
