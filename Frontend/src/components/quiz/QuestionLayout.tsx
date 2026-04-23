@@ -110,7 +110,7 @@ export default function QuestionLayout() {
 
   useEffect(() => {
     const fetchQuestion = async () => {
-      const { data, error } = await supabase.from('questions').select().eq('quiz_id', id);
+      const { data, error } = await supabase.from('questions').select().eq('quiz_id', id).eq('user_id', currentUser?.id);
       if (error) {
         console.error("Gagal fetch data:", error.message);
       } else if (data) {

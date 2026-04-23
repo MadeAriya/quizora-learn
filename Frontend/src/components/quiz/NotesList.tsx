@@ -6,6 +6,7 @@ import { IoMdMore } from "react-icons/io";
 import { Modal } from "../ui/modal";
 import { useEffect, useState } from "react";
 import {supabase} from "../../config/SupabaseConfig";
+import { useAuth } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 
 interface Quiz {
@@ -20,15 +21,19 @@ interface Folder {
 }
 
 export default function NotesList() {
+  const { currentUser } = useAuth();
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [openModal1, setOpenModal1] = useState<boolean>(false);
   const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
   const [quizez, setQuizez] = useState<Quiz[]>([]);
 
-  // Folder state persistence through localStorage
+  // Folder state persistence through localStorage (scoped to user)
+  const folderKey = `quizora_folders_${currentUser?.id || 'anon'}`;
+  const noteFolderKey = `quizora_note_folders_${currentUser?.id || 'anon'}`;
+
   const [folders, setFolders] = useState<Folder[]>(() => {
     try {
-      const stored = localStorage.getItem("quizora_folders");
+      const stored = localStorage.getItem(folderKey);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -37,7 +42,7 @@ export default function NotesList() {
 
   const [noteFolderMap, setNoteFolderMap] = useState<Record<number, string>>(() => {
     try {
-      const stored = localStorage.getItem("quizora_note_folders");
+      const stored = localStorage.getItem(noteFolderKey);
       return stored ? JSON.parse(stored) : {};
     } catch {
       return {};
@@ -58,8 +63,9 @@ export default function NotesList() {
   };
 
   useEffect(() => {
+    if (!currentUser?.id) return;
     const fetchQuizez = async () => {
-      const { data, error } = await supabase.from("quizez").select();
+      const { data, error } = await supabase.from("quizez").select().eq("user_id", currentUser.id);
       if (error) {
         console.error("Gagal fetch data:", error.message);
       } else if (data) {
@@ -67,16 +73,16 @@ export default function NotesList() {
       }
     };
     fetchQuizez();
-  }, []);
+  }, [currentUser?.id]);
 
   // Automatically save folder structures to memory on every change
   useEffect(() => {
-    localStorage.setItem("quizora_folders", JSON.stringify(folders));
-  }, [folders]);
+    localStorage.setItem(folderKey, JSON.stringify(folders));
+  }, [folders, folderKey]);
 
   useEffect(() => {
-    localStorage.setItem("quizora_note_folders", JSON.stringify(noteFolderMap));
-  }, [noteFolderMap]);
+    localStorage.setItem(noteFolderKey, JSON.stringify(noteFolderMap));
+  }, [noteFolderMap, noteFolderKey]);
 
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return;

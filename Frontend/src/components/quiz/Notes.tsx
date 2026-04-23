@@ -34,7 +34,7 @@ export default function Notes() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: quizData, error: quizError } = await supabase.from('quizez').select().eq('id', id).single();
+      const { data: quizData, error: quizError } = await supabase.from('quizez').select().eq('id', id).eq('user_id', currentUser?.id).single();
       if (quizError) console.error(quizError.message);
       else setQuiz(quizData);
 

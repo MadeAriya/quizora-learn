@@ -56,7 +56,7 @@ export default function QuizFlashcard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: quizezData } = await supabase.from('quizez').select().eq('id', id);
+      const { data: quizezData } = await supabase.from('quizez').select().eq('id', id).eq('user_id', currentUser?.id);
       if (quizezData) setQuizez(quizezData);
 
       const { data: transcriptData } = await supabase.from('transcript').select('transcribe_text').eq('quiz_id', id).single();
@@ -66,7 +66,7 @@ export default function QuizFlashcard() {
   }, [id]);
 
   const fetchQuestions = useCallback(async () => {
-    const { data } = await supabase.from('flashcard').select().eq('quiz_id', id);
+    const { data } = await supabase.from('flashcard').select().eq('quiz_id', id).eq('user_id', currentUser?.id);
     if (data) setQuestions(data);
   }, [id]);
 

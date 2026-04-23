@@ -164,7 +164,7 @@ export default function NotesTranscript() {
 
     useEffect(() => {
         const fetchQuizez = async () => {
-            const { data, error } = await supabase.from('quizez').select('topic, source').eq('id', id);
+            const { data, error } = await supabase.from('quizez').select('topic, source').eq('id', id).eq('user_id', currentUser?.id);
             if (error) {
                 console.error("Gagal fetch data:", error.message);
             } else if (data) {
