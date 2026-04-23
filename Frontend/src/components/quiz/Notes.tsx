@@ -30,7 +30,7 @@ export default function Notes() {
   const [isGenerating, setIsGenerating] = useState(false);
   const editorRef = useRef<ClassicEditor | null>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
-  const LICENSE_KEY = import.meta.env.VITE_CKEDITOR_LICENSE_KEY;
+  const LICENSE_KEY = import.meta.env.VITE_CKEDITOR_LICENSE_KEY || 'GPL';
 
   useEffect(() => {
     const fetchData = async () => {
