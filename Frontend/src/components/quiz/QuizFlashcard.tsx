@@ -422,7 +422,7 @@ export default function QuizFlashcard() {
 
                                {/* Back */}
                                <div className="absolute w-full h-full backface-hidden bg-white dark:bg-[#2d3142] border border-gray-200 dark:border-[#3d4255] rounded-3xl flex flex-col items-center justify-center p-8 text-center rotate-y-180 shadow-xl dark:shadow-[0_0_40px_rgba(79,70,229,0.3)]">
-                                 <div className="absolute top-6">
+                                 <div className="">
                                     <span className="px-5 py-1.5 rounded-full border border-indigo-200 dark:border-[#4a5065] text-xs font-bold tracking-widest text-indigo-500 dark:text-[#449aff] bg-indigo-50 dark:bg-transparent uppercase">
                                       {isAnswerFirst ? 'QUESTION' : 'ANSWER'}
                                     </span>
@@ -432,7 +432,7 @@ export default function QuizFlashcard() {
                                       {isAnswerFirst ? question.question : question.answer}
                                     </p>
                                  </div>
-                                 <div className="absolute bottom-6 flex items-center gap-2 text-gray-400 dark:text-gray-500 font-medium text-sm">
+                                 <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 font-medium text-sm">
                                     <span>📘</span> Tap to flip back
                                  </div>
                                </div>
