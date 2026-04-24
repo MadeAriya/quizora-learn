@@ -15,9 +15,12 @@ import { supabaseAdmin } from '../../config/supabase.js';
 export async function generateFlashcards(transcript, userId, quizId) {
   console.log(`[Flashcard] Generating flashcards for quiz ${quizId}...`);
 
+  // Truncate to ~12K chars (~3K tokens) to reduce token usage
+  const truncated = transcript.length > 12000 ? transcript.slice(0, 12000) + '\n\n[...materi dipotong untuk efisiensi]' : transcript;
+
   const result = await aiRouter.generate(
     promptTemplates.flashcard_essay.system,
-    promptTemplates.flashcard_essay.user(transcript),
+    promptTemplates.flashcard_essay.user(truncated),
     { jsonMode: true, temperature: 0.7, taskType: 'flashcard', userId, quizId }
   );
 

@@ -15,9 +15,12 @@ import { supabaseAdmin } from '../../config/supabase.js';
 export async function generateQuiz(text, userId, quizId) {
   console.log(`[Quiz] Generating 10 MCQ for quiz ${quizId}...`);
 
+  // Truncate to ~12K chars (~3K tokens) to reduce token usage
+  const truncated = text.length > 12000 ? text.slice(0, 12000) + '\n\n[...materi dipotong untuk efisiensi]' : text;
+
   const result = await aiRouter.generate(
     promptTemplates.quiz_10_mcq.system,
-    promptTemplates.quiz_10_mcq.user(text),
+    promptTemplates.quiz_10_mcq.user(truncated),
     { jsonMode: true, temperature: 0.7, taskType: 'quiz', userId, quizId }
   );
 

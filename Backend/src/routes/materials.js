@@ -8,15 +8,14 @@ import { extractTextFromFile, SUPPORTED_MIME_TYPES } from '../services/extractio
 import { chunkText } from '../services/extraction/chunker.js';
 import { storeChunksWithEmbeddings } from '../services/embedding/embedder.js';
 import { generateQuiz } from '../services/generation/quiz.js';
-import { generateNotes } from '../services/generation/notes.js';
 
 const router = Router();
 const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 10 * 1024 * 1024 } });
 
 /**
  * POST /api/materials/youtube
- * Full YouTube pipeline: extract transcript → embed → generate quiz + notes
- * Replaces n8n webhook d21b3b4e
+ * YouTube pipeline: extract transcript → embed → generate quiz
+ * Notes & flashcards are generated on-demand via /api/generate/*
  */
 router.post('/youtube', authMiddleware, async (req, res) => {
   const { link, user_id } = req.body;
@@ -40,7 +39,7 @@ router.post('/youtube', authMiddleware, async (req, res) => {
       .from('quizez')
       .insert({
         source: link,
-        topic: 'Processing...', // updated after AI generates topic
+        topic: 'Processing...',
         user_id: userId,
         created_at: new Date().toISOString(),
       })
@@ -50,7 +49,7 @@ router.post('/youtube', authMiddleware, async (req, res) => {
     if (quizError) throw new Error(`Failed to create quiz: ${quizError.message}`);
     const quizId = quizRow.id;
 
-    // 3. Chunk and embed text for vector search
+    // 3. Chunk and embed text for vector search (uses HuggingFace, not AI tokens)
     const chunks = chunkText(transcript);
     storeChunksWithEmbeddings(chunks, { userId, quizId: String(quizId) })
       .catch(err => console.warn('[Materials] Embedding storage failed:', err.message));
@@ -63,36 +62,20 @@ router.post('/youtube', authMiddleware, async (req, res) => {
       created_at: quizRow.created_at,
     });
 
-    // 5. Generate quiz + notes in parallel (reduces Vercel timeout risk)
-    const [quizSettled, notesSettled] = await Promise.allSettled([
-      generateQuiz(transcript, userId, quizId),
-      generateNotes(transcript, userId, quizId),
-    ]);
+    // 5. Generate quiz only (notes are generated on-demand)
+    const quizResult = await generateQuiz(transcript, userId, quizId);
 
-    // 6. Handle quiz result
-    if (quizSettled.status === 'rejected') {
-      throw new Error(`Quiz generation failed: ${quizSettled.reason?.message}`);
-    }
-    const quizResult = quizSettled.value;
-
-    // 7. Update quiz topic
+    // 6. Update quiz topic
     await supabaseAdmin
       .from('quizez')
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
-
-    // 8. Check notes result
-    const notesGenerated = notesSettled.status === 'fulfilled';
-    if (!notesGenerated) {
-      console.error('[Materials] Notes generation failed:', notesSettled.reason?.message);
-    }
 
     return res.json({
       success: true,
       quizId,
       topic: quizResult.topic,
       questionCount: quizResult.questions.length,
-      notesGenerated,
     });
   } catch (error) {
     console.error('[Materials] YouTube pipeline error:', error.message);
@@ -102,8 +85,8 @@ router.post('/youtube', authMiddleware, async (req, res) => {
 
 /**
  * POST /api/materials/upload
- * File upload pipeline: extract text → embed → generate quiz + notes
- * Replaces n8n webhook f3a1f876
+ * File upload pipeline: extract text → embed → generate quiz
+ * Notes & flashcards are generated on-demand via /api/generate/*
  */
 router.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
   const userId = req.body.user_id || req.userId;
@@ -158,40 +141,23 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
       created_at: quizRow.created_at,
     });
 
-    // 5. Generate quiz + notes in parallel
-    const [quizSettled, notesSettled] = await Promise.allSettled([
-      generateQuiz(text, userId, quizId),
-      generateNotes(text, userId, quizId),
-    ]);
+    // 5. Generate quiz only
+    const quizResult = await generateQuiz(text, userId, quizId);
 
-    // 6. Handle quiz result
-    if (quizSettled.status === 'rejected') {
-      throw new Error(`Quiz generation failed: ${quizSettled.reason?.message}`);
-    }
-    const quizResult = quizSettled.value;
-
-    // 7. Update topic
+    // 6. Update topic
     await supabaseAdmin
       .from('quizez')
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
-
-    // 8. Check notes result
-    const notesGenerated = notesSettled.status === 'fulfilled';
-    if (!notesGenerated) {
-      console.error('[Materials] Notes generation failed:', notesSettled.reason?.message);
-    }
 
     return res.json({
       success: true,
       quizId,
       topic: quizResult.topic,
       questionCount: quizResult.questions.length,
-      notesGenerated,
     });
   } catch (error) {
     console.error('[Materials] Upload pipeline error:', error.message);
-    // Clean up on error
     if (req.file) await unlink(req.file.path).catch(() => {});
     return res.status(500).json({ error: error.message });
   }
@@ -235,33 +201,19 @@ router.post('/paste', authMiddleware, async (req, res) => {
       created_at: quizRow.created_at,
     });
 
-    // Generate quiz + notes in parallel
-    const [quizSettled, notesSettled] = await Promise.allSettled([
-      generateQuiz(text, userId, quizId),
-      generateNotes(text, userId, quizId),
-    ]);
-
-    if (quizSettled.status === 'rejected') {
-      throw new Error(`Quiz generation failed: ${quizSettled.reason?.message}`);
-    }
-    const quizResult = quizSettled.value;
+    // Generate quiz only
+    const quizResult = await generateQuiz(text, userId, quizId);
 
     await supabaseAdmin
       .from('quizez')
       .update({ topic: quizResult.topic })
       .eq('id', quizId);
 
-    const notesGenerated = notesSettled.status === 'fulfilled';
-    if (!notesGenerated) {
-      console.error('[Materials] Notes generation failed:', notesSettled.reason?.message);
-    }
-
     return res.json({
       success: true,
       quizId,
       topic: quizResult.topic,
       questionCount: quizResult.questions.length,
-      notesGenerated,
     });
   } catch (error) {
     console.error('[Materials] Paste pipeline error:', error.message);

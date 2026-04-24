@@ -19,9 +19,12 @@ export async function generateNotes(text, userId, quizId, topic = '') {
 
   console.log(`[Notes] Generating HTML notes for quiz ${quizId}...`);
 
+  // Truncate to ~16K chars (~4K tokens) to reduce token usage
+  const truncated = text.length > 16000 ? text.slice(0, 16000) + '\n\n[...materi dipotong untuk efisiensi]' : text;
+
   const result = await aiRouter.generate(
     promptTemplates.notes_html.system,
-    promptTemplates.notes_html.user(text, topic),
+    promptTemplates.notes_html.user(truncated, topic),
     { temperature: 0.6, taskType: 'notes', userId, quizId }
   );
 

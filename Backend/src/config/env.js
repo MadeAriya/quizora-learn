@@ -32,6 +32,7 @@ export const config = {
     fallbackProvider: process.env.FALLBACK_AI_PROVIDER || 'groq',
     geminiApiKey: process.env.GOOGLE_GEMINI_API_KEY,
     groqApiKey: process.env.GROQ_API_KEY || '',
+    sambanovaApiKey: process.env.SAMBANOVA_API_KEY || '',
     huggingfaceApiKey: process.env.HUGGINGFACE_API_KEY || '',
   },
 

@@ -1,11 +1,13 @@
 import { geminiProvider } from './gemini.js';
 import { groqProvider } from './groq.js';
+import { sambanovaProvider } from './sambanova.js';
 import { config } from '../../config/env.js';
 import { supabaseAdmin } from '../../config/supabase.js';
 
 const providers = {
   gemini: geminiProvider,
   groq: groqProvider,
+  sambanova: sambanovaProvider,
 };
 
 /**
