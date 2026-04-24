@@ -4,7 +4,6 @@ dotenv.config();
 const required = [
   'SUPABASE_URL',
   'SUPABASE_ANON_KEY',
-  'GOOGLE_GEMINI_API_KEY',
 ];
 
 for (const key of required) {
@@ -12,6 +11,19 @@ for (const key of required) {
     console.error(`[ENV] Missing required environment variable: ${key}`);
     process.exit(1);
   }
+}
+
+// Validate that at least the primary AI provider key is set
+const providerKeyMap = {
+  gemini: 'GOOGLE_GEMINI_API_KEY',
+  groq: 'GROQ_API_KEY',
+  sambanova: 'SAMBANOVA_API_KEY',
+};
+const primaryProvider = process.env.PRIMARY_AI_PROVIDER || 'gemini';
+const primaryKey = providerKeyMap[primaryProvider];
+if (primaryKey && !process.env[primaryKey]) {
+  console.error(`[ENV] PRIMARY_AI_PROVIDER is "${primaryProvider}" but ${primaryKey} is not set`);
+  process.exit(1);
 }
 
 export const config = {

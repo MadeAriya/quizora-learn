@@ -1,6 +1,6 @@
 import PageMeta from "../../components/common/PageMeta";
 import QuizMetrics from "../../components/quiz/QuizMetrics";
-import QuizCategory from "../../components/quiz/QuizCategory";
+// import QuizCategory from "../../components/quiz/QuizCategory";
 import QuizSource from "../../components/quiz/QuizSource";
 import { useAuth } from "../../context/AuthContext";
 
@@ -38,7 +38,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="xl:col-span-4 flex flex-col h-full">
+        {/* <div className="xl:col-span-4 flex flex-col h-full">
           <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 dark:border-gray-800 flex-1 relative overflow-hidden group">
              <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50 dark:bg-blue-900/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
              <div className="mb-8 relative z-10">
@@ -49,7 +49,7 @@ export default function Home() {
               <QuizCategory />
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </>
   );
